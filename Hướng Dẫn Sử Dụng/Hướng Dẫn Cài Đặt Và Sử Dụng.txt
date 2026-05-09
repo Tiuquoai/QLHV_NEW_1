@@ -1,0 +1,38 @@
+* CSDL:
+
+- Tạo Database với tên "qlhv"
+- Import file qlhv.sql 
+- Tạo mới đặc quyền người dùng:
+
+* ADMIN
+
++ Tên User: AdminHT
++ Mật khẩu: 123456
++ DB: qlhv
+
+* Giảng Viên
+
++ Tên User: GiangVien
++ Mật khẩu: 123456
++ DB: qlhv
+
+* Sinh Viên:
+
++ Tên User: SinhVien
++ Mật Khẩu: 123456
++ DB: qhv
+
+- Lưu ý: Các tài khoản người dùng đều được chạy cục bộ là Localhost  
+
+* Website: 
+
+- Đăng nhập vào các tài khoản
+
+* Đăng nhập Admin
+
++ Mã Admin: quantri@!lms
++ Mật khẩu: quantri123456
+
+* Đăng nhập sinh viên và giảng viên xem chi tiết tại "file/File_Cap_Tai_Khoan.xlsx", xem tại mục Mã TK và Mật Khẩu.
+
+- Để sử dụng website vui lòng xem chi tiết tại các file "Sơ Đồ Trang Web.docx" và "Hướng Dẫn Sử Dụng File Excel ( Chi Tiết ).txt"

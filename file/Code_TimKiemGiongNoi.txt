@@ -1,0 +1,105 @@
+Trang index.php
+
+if(isset($_GET['voice'])){
+				 include_once("voice.php");
+}
+
+<?php
+if(isset($_POST['submit'])){
+	$gt=$_POST['gt'];
+	?>
+	<input type="text" name="s" value="<?php echo $gt ?>" size="10"/>
+    <?php
+}
+else{
+?>
+                    	<input type="text" name="s" placeholder="Search Product" size="10"/>
+<?php
+}
+?>
+
+ <div class="col-xs-1 col-sm-1 col-md-1 col-ld-1">
+                 
+                    	<a href="index.php?voice"><img src="img/mc.png" width="25" height="25" /></a>
+                       
+                   
+ </div>
+
+
+Trang voice.php
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+	button{
+	background-color:#FFF;
+	border-bottom:0;
+	border-top:0;
+	border-left:0;
+	border-right:0;
+}
+	</style>
+</head>
+<body>
+<br />
+<br />
+
+    <center><button type="button" id='btnTalk'><img src="img/mc.png" width="100%" height="60"></button></center>
+    <br>
+    <center><nvm>Nhấn Vào Micro Để Nói !</nvm></center>
+    <br>
+    <center> <form name="fr" action="index.php" method="POST">
+        <input type="hidden" name="gt" id="gt"  />
+        <input type="submit" value="OK" name="submit" class="btn-success"/>
+    </form><center>
+    <br><br>
+    <span id='message'></span>
+    <br><br>
+    <script>
+        var message = document.querySelector('#message');
+
+        var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+        var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
+
+        var grammar = '#JSGF V1.0;'
+
+        var recognition = new SpeechRecognition();
+        var speechRecognitionList = new SpeechGrammarList();
+        speechRecognitionList.addFromString(grammar, 1);
+        recognition.grammars = speechRecognitionList;
+        recognition.lang = 'vi-VN';
+        recognition.interimResults = false;
+
+        recognition.onresult = function(event) {
+			var oForm = document.forms["fr"];
+            var lastResult = event.results.length - 1;
+            var content = event.results[lastResult][0].transcript;
+            <?php // message.textContent = 'Voice Input: ' + content; ?>
+			document.getElementById("gt").value = content;
+			
+
+        };
+        recognition.onspeechend = function() {
+            recognition.stop();
+        };
+
+        recognition.onerror = function(event) {
+            message.textContent = 'Error occurred in recognition: ' + event.error;
+        }
+
+        document.querySelector('#btnTalk').addEventListener('click', function(){
+            recognition.start();
+        });
+		
+    </script>
+
+</body>
+</html>
+
+Ghi chú:Sau khi nói xong ta nhấn nút OK để tiến hành chuyển đổi giọng nói sang văn bản chữ và gửi dữ liệu
+đoạn văn bản chữ này về trang index và đổ dữ liệu vào thanh tìm kiếm sau đó ta bấm nút search là hoàn tất.

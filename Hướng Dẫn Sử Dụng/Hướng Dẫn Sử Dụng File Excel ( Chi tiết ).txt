@@ -1,0 +1,78 @@
+* Lưu ý: Các file tải lên đều là file .xlsx, các định dạng file khác không được chấp nhận, sử dụng đúng file cho chức năng cụ thể
+- Để sử dụng các file, Admin vui lòng đăng nhập qua đường dẫn: https://lmstructuyen.000webhostapp.com/login-ad.php
+
+* File Cấp Tài Khoản: File_Cap_Tai_Khoan.xlsx
+B1: Vào giao diện
+B2: Chọn mục "Quản Lý Tài Khoản User"
+B3: Chọn mục "Sinh Viên/ Giảng Viên" để cấp tài khoản
+B4: Nhấn nút thêm để thêm tài khoản
+B5: Sẽ hiển thị nút tải lên bằng Excel
+B6: Để lấy file tải lên > Admin nhấn vào đường link file mẫu bên dưới để tải về, nhập các dữ theo khung mẫu có sẵn
+B7: Sau khi nhập hoàn thiện dữ liệu trong file > Admin nhấn nút chọn tệp và chọn file vừa nhập sau đó nhấn OK để tiến hành cấp tài khoản tự động
+B8: Kết thúc và xem kết quả ở giao diện mục "Sinh Viên/ Giảng Viên"
+
+* File Tạo Học Phần: Tao_Hoc_Phan.xlsx
+B1: Vào giao diện
+B2: Chọn mục "Quản Lý Chung"
+B3: Chọn mục "Học Phần" để tạo mới học phần
+B4: Nhấn nút thêm để thêm mới học phần
+B5: Sẽ hiển thị nút tải lên bằng Excel
+B6: Để lấy file tải lên > Admin nhấn vào đường link file mẫu bên dưới để tải về, nhập các dữ theo khung mẫu có sẵn
+B7: Sau khi nhập hoàn thiện dữ liệu trong file > Admin nhấn nút chọn tệp và chọn file vừa nhập sau đó nhấn OK để tiến hành thêm học phần tự động
+B8: Kết thúc và xem kết quả ở giao diện mục "Học Phần"
+
+* File Tạo Khoa/Viện: Tao_Moi_Khoa_Vien.xlsx
+B1: Vào giao diện
+B2: Chọn mục "Quản Lý Chung"
+B3: Chọn mục "Quản Lý Khoa/Viện" để tạo mới khoa viện
+B4: Nhấn nút thêm để thêm mới khoa viện
+B5: Sẽ hiển thị nút tải lên bằng Excel
+B6: Để lấy file tải lên > Admin nhấn vào đường link file mẫu bên dưới để tải về, nhập các dữ theo khung mẫu có sẵn
+B7: Sau khi nhập hoàn thiện dữ liệu trong file > Admin nhấn nút chọn tệp và chọn file vừa nhập sau đó nhấn OK để tiến hành thêm khoa/viện tự động
+B8: Kết thúc và xem kết quả ở giao diện mục "Quản Lý Khoa/Viện"
+
+* File Tạo Chuyên Ngành: Tao_Moi_Chuyen_Nganh.xlsx
+B1: Vào giao diện
+B2: Chọn mục "Quản Lý Chung"
+B3: Chọn mục "Quản Lý Chuyên Ngành" để tạo mới chuyên ngành
+B4: Nhấn nút thêm để thêm mới chuyên ngành
+B5: Sẽ hiển thị nút tải lên bằng Excel
+B6: Để lấy file tải lên > Admin nhấn vào đường link file mẫu bên dưới để tải về, nhập các dữ theo khung mẫu có sẵn
+B7: Sau khi nhập hoàn thiện dữ liệu trong file > Admin nhấn nút chọn tệp và chọn file vừa nhập sau đó nhấn OK để tiến hành thêm chuyên ngành tự động
+B8: Kết thúc và xem kết quả ở giao diện mục "Quản Lý Chuyên Ngành"
+
+* File Tạo Tin Tức: Tin_Tuc.xlsx
+B1: Vào giao diện
+B2: Chọn mục "Quản Lý Chung"
+B3: Chọn mục "Quản Lý Tin Tức" để tạo mới tin tức
+B4: Nhấn nút thêm để thêm mới tin tức
+B5: Sẽ hiển thị nút tải lên bằng Excel
+B6: Để lấy file tải lên > Admin nhấn vào đường link file mẫu bên dưới để tải về, nhập các dữ theo khung mẫu có sẵn
+B7: Sau khi nhập hoàn thiện dữ liệu trong file > Admin nhấn nút chọn tệp và chọn file vừa nhập sau đó nhấn OK để tiến hành thêm tin tức tự động
+B8: Kết thúc và xem kết quả ở giao diện mục "Quản Lý Tin Tức"
+
+* Để phân công sinh viên bằng Excel, Admin cần thực hiện các bước:
+B1: Vào giao diện 
+B2: Chọn mục "Quản Lý Tài Khoản User"
+B3: Chọn mục "Sinh Viên"
+B4: Nhấn vào mục "Tải" có biểu tượng Excel
+B5: Chọn 1 chuyên ngành để lấy danh sách sinh viên sau đó nhấn "Tải" để tải danh sách về
+B6: Quay trở ra giao diện chính > Chọn mục "Quản Lý Học Phần" > Chọn "Sinh Viên - Học Phần"
+B7: Chọn vào biểu tượng Excel để phân công sinh viên vào học phần tự động
+B8: Tải lên danh sách vừa download về, chọn các mục hiển thị trong form đầy đủ sau đó nhấn OK và danh sách sinh viên được phân vào học phần tự động
+B9: Hoàn tất và xem kết quả tại giao diện "Sinh Viên - Học Phần"'
+
+* Để upload điểm học phần lên hệ thống, GV cần thực hiện các bước:
+B1: Vào giao diện chính
+B2: Chọn mục "Danh sách SV"
+B3: Nhấn nút tải để tải danh sách sinh viên của học phần
+B4: Tiến hành nhập dữ liệu vào file 
+B5: sau khi hoàn thanh việc nhập điểm vào file > GV chọn mục "Quản Lý Điểm"
+B6: Nhấn vào file tệp để tải file điểm vừa nhập vào danh sách và nhấn OK để tiến hành lên điểm trên HT
+B7: Hoàn thành và xem điểm đã nhập tại giao diện "Quản Lý Điểm"
+
+* Để xem thống kê điểm, GV cần thực hiện các bước :
+B1: Chọn biểu tượng biểu đồ trên giao diện "Quản Lý Điểm"
+B2: Giao diện thống kê xuất hiện
+B3: Nhấn chọn các biểu đồ tương ứng để xem 
+B4: Xem kết quả thống kê

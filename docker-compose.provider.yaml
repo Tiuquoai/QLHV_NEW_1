@@ -1,0 +1,44 @@
+name: lms_thuong_hoai
+
+networks:
+  lms_thuong_hoai_nw:
+    driver: bridge
+    name: lms_thuong_hoai_nw
+
+services: 
+
+
+  # Ollama AI
+  ollama:
+    image: ollama/ollama
+    container_name: ollama_lms_thuong_hoai
+    ports:
+      - "11435:11434"
+    volumes:
+      - ./docker/docker_data/ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - lms_thuong_hoai_nw
+
+
+  qdrant:
+    image: qdrant/qdrant
+    container_name: qdrant_thuong_hoai
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./docker/docker_data/qdrant_data:/qdrant/storage
+    networks:
+      - lms_thuong_hoai_nw
+    restart: unless-stopped
+
+  # fastapi:
+  #   build: ./python_script
+  #   container_name: convert_vector_thuong_hoai
+  #   volumes:
+  #     - ./python_script:/app
+  #   ports:
+  #     - "8000:8000" 
+  #   networks:
+  #     - lms_thuong_hoai_nw
