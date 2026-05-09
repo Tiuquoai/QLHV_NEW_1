@@ -353,16 +353,17 @@ document.getElementById('chatForm').addEventListener('submit', async function(e)
     
     try {
         // Call API
-        const response = await fetch('/QLHV/chat-api.php', {
+        const response = await fetch('/plhv_hoai-main/chat-api.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: message })
         });
-        
+        // console.log(response);
         const data = await response.json();
         
         // Remove typing indicator
         document.getElementById('typingIndicator').remove();
+
         
         if (data.error) {
             addMessage('Xin lỗi, đã xảy ra lỗi: ' + data.error, 'ai');

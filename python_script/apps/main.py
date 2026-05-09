@@ -5,18 +5,24 @@ import pandas as pd
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from pathlib import Path
-
+from dotenv import load_dotenv
 import requests
+import os
 
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
 app = FastAPI()
 
 # load 1 lần duy nhất
 model = SentenceTransformer('BAAI/bge-m3')
-client = QdrantClient("http://localhost:6333")
+client = QdrantClient(os.getenv('QDRANT_URL'))
 collection_name = "iuh_subjects"
 
-URL = "https://api.groq.com/openai/v1/chat/completions"
+API_KEY = os.getenv('API_KEY')
+
+URL = os.getenv('GROQ_CLOUD_URL')
 
 
 class RequestData(BaseModel):
@@ -30,6 +36,7 @@ class RequestCallOpenAi(BaseModel):
     
 @app.post("/embedding")
 def embed(data: RequestData):
+    
     vector = model.encode(data.text).tolist()
     return { "vector" : vector }
 
@@ -55,9 +62,14 @@ def callOpenAi (data : RequestCallOpenAi):
         "temperature": 0.2
     }
     
+    # return  {
+    #     "url" : os.getenv('QDRANT_URL'),
+    #     "api" : API_KEY
+    # }
+    
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer lalalala"
+        "Authorization": f"Bearer {API_KEY}"
     }
     
     

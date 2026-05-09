@@ -2,6 +2,9 @@
 session_start();
 header('Content-Type: application/json');
 
+
+require './config.php';
+
 // Debug mode - bật để xem lỗi
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -155,7 +158,7 @@ $kaka = $prompt;
 
 
 
-$ollamaUrl = 'http://127.0.0.1:8000/chat';
+$ollamaUrl = CAL_LLM_CHAT;
 
 $payload = json_encode(array(
     // 'model' => 'llama3.2:3b',
@@ -197,11 +200,11 @@ if ($httpCode !== 200) {
 
 $result = json_decode($response, true);
 
-var_dump($result);
-exit;
+// var_dump($result['choices'][0]['message']['content']);
+// exit;
 
-if (isset($result['response'])) {
-    echo json_encode(array('response' => $result['response']));
+if (isset($result['choices'][0]['message']['content'])) {
+    echo json_encode(array('response' => $result['choices'][0]['message']['content']));
 } else {
     echo json_encode(array(
         'error' => 'Không nhận được phản hồi từ AI',
