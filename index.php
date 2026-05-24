@@ -698,9 +698,11 @@ else{
             <strong>Lựa chọn môi trường học tập phù hợp</strong><br>
             Môi trường là yếu tố có ảnh hưởng lớn đến hiệu quả của buổi học. Một không gian yên tĩnh, không ồn ào, thoáng mát là những tiêu chí để tạo môi trường lý tưởng cho buổi học online.
         </p>
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px" >
+        <img src="https://afamilycdn.com/150157425591193600/2021/12/31/hoc-onlineopku-16409405140861546013185.jpeg" style="width: 80%" alt="Học online">
         
-        <img src="https://o.rada.vn/data/image/2021/05/24/Hoc-online.jpg" alt="Học online">
-        
+        </div>
+
         <p class="content-text">
             <strong>Tham khảo tài liệu trước khi học online</strong><br>
             Trước khi bắt đầu buổi học trực tuyến, bạn nên đọc trước tài liệu, bài giảng để nắm trước những kiến thức sẽ được dạy. Điều này giúp việc tiếp thu bài giảng hiệu quả hơn.
@@ -725,10 +727,12 @@ else{
             <strong>Tạo nhóm học tập hiệu quả</strong><br>
             Để đạt kết quả cao trong học online, bạn nên tạo nhóm học tập để trao đổi thông tin và thảo luận đề tài với nhau.
         </p>
+        <div style="text-align: center; margin-top: 20px">
+        <img src="https://upo.edu.vn/wp-content/uploads/phuong-phap-lam-viec-nhom-trong-hoc-tap-5.jpg"  alt="Học nhóm">
+        </div>
+
         
-        <img src="https://tuyengiao.vn/Uploads/2022/12/9/10/HN1.jpg" alt="Học nhóm">
-        
-        <p class="author-credit">— <strong>Phuc Nguyen</strong></p>
+        <p class="author-credit">— <strong>Châu Hoài</strong></p>
     </div>
     
     <!-- Features -->

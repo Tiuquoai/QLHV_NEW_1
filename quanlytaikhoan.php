@@ -350,7 +350,7 @@ $mail->Username = "thuonghoaicute103@gmail.com";
 $mail->Password = "apss kjci mxka pjby";
 $mail->SetFrom("thuonghoaicute103@gmail.com");
 $mail->AddAddress($e);
-$mail->Subject = "Trung Tam Quan Tri He Thong CMS";
+$mail->Subject = "Trung Tam Quan Tri He Thong LMS";
 $mail->Body = "<p style='color:#000;'><strong>Xin Gửi Đến Sinh Viên Tài Khoản Và Mật Khẩu Đăng Nhập Hệ Thống !</strong> <br>
 <p></p>
 - Tên Sinh Viên: ".$s['tensinhvien']."<br/>
@@ -501,7 +501,7 @@ $mail->Username = "thuonghoaicute103@gmail.com";
 $mail->Password = "apss kjci mxka pjby";
 $mail->SetFrom("thuonghoaicute103@gmail.com");
 $mail->AddAddress($e);
-$mail->Subject = "Trung Tam Quan Tri He Thong CMS";
+$mail->Subject = "Trung Tam Quan Tri He Thong LMS";
 $mail->Body = "<p style='color:#000;'><strong>Xin Gửi Đến Quý Giảng Viên Tài Khoản Đăng Nhập Hệ Thống !</strong> <br>
 <p></p>
 - Họ Tên Giảng Viên: ".$s['hotengiangvien']."<br/>

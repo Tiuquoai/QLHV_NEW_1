@@ -1794,8 +1794,9 @@ p[style*="background: #fff3cd"] {
         </div>
     </div>
 </div>
-
+        
 <div class="container-custom" style="padding: 20px 15px;">
+
     <div class="course-header-section">
         <h1 class="course-title">📖 <?php 
         $is=$_REQUEST['is'];
@@ -1808,6 +1809,7 @@ p[style*="background: #fff3cd"] {
     </div>
     
     <div class="nav-tabs-custom">
+        <a href="homeSV.php?bm=<?php echo $_REQUEST['bm'] ?>&is=<?php echo $_REQUEST['is'] ?>&ihp=<?php echo $_REQUEST['ihp']?>&il=<?php echo $_REQUEST['il'] ?>&kh" class="nav-tab-item">←</a>
         <?php if(isset($_REQUEST['kh'])){ ?>
             <a href="ctmonhoc.php?bm=<?php echo $_REQUEST['bm'] ?>&is=<?php echo $_REQUEST['is'] ?>&ihp=<?php echo $_REQUEST['ihp']?>&il=<?php echo $_REQUEST['il'] ?>&kh" class="nav-tab-item active">📚 Khóa Học</a>
         <?php } else{ ?>

@@ -113,7 +113,7 @@ $mail->Username = "thuonghoaicute103@gmail.com";
 $mail->Password = "apss kjci mxka pjby";
 $mail->SetFrom("thuonghoaicute103@gmail.com");
 $mail->AddAddress($pe);
-$mail->Subject = "Trung Tam Quan Tri He Thong CMS";
+$mail->Subject = "Trung Tam Quan Tri He Thong LMS";
 $mail->Body = "<p style='color:#000;'>Mã OTP xác nhận của bạn là:&nbsp;<tb style='color:orange'>".$OTP."</tb> </p>";
  if(!$mail->Send()){
    
@@ -212,7 +212,7 @@ $mail->Username = "phucable@gmail.com";
 $mail->Password = "afbv blky ofzi vzsy";
 $mail->SetFrom("quantrihethong@gmail.com");
 $mail->AddAddress($pe);
-$mail->Subject = "Trung Tam Quan Tri He Thong CMS";
+$mail->Subject = "Trung Tam Quan Tri He Thong LMS";
 $mail->Body = "<p style='color:#03F;'>Mã OTP xác nhận của bạn là:&nbsp;<tb style='color:orange'>".$OTP."</tb> </p>";
  if(!$mail->Send()){
    

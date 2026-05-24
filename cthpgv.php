@@ -2716,7 +2716,7 @@ $ttm=mysql_fetch_assoc($qr);
      <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 tab-active" style="padding:2px; height:60px; border-radius: 10px">
      <p></p>
          <center><strong><a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php 
-		  echo $_REQUEST['ihp']?>&&il=<?php echo $_REQUEST['il']?>&&gd"><n  style="color:white;">HP Giảng Dạy</n></a></strong></center>
+		  echo $_REQUEST['ihp']?>&&il=<?php echo $_REQUEST['il']?>&&gd"><n  style="color:white;" >HP Giảng Dạy</n></a></strong></center>
     </div>
      <?php } else{ ?>
      <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2" style="background-color:#f8f8f8; padding:2px; height:60px; border-radius: 5px">

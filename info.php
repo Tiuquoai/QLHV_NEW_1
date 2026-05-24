@@ -639,6 +639,8 @@ if($k != $mk || $m != $ma){
         <div style="color: #999; font-size: 14px; margin-bottom: 15px;"><?php echo $x['masosinhvien']; ?></div>
         
         <div class="info-actions">
+        <a href="homeSV.php?bm=<?php echo $_REQUEST['bm'] ?>&is=<?php echo $_REQUEST['is'] ?>&ihp=<?php echo $_REQUEST['ihp']?>&il=<?php echo $_REQUEST['il'] ?>&kh" class="info-action-btn">←</a>
+
             <a href="info.php?bm=<?php echo $_REQUEST['bm']; ?>&&chinhsua" class="info-action-btn">
                 ✏️ Chỉnh Sửa
             </a>
@@ -956,9 +958,7 @@ echo date_format($ngaycap, 'd-m-Y');?></span>
         </div>
     </div>
     
-    <div class="back-to-home">
-        <a href="homeSV.php?bm=<?php echo $_REQUEST['bm'] ?>" title="Quay Lại Trang Chủ">←</a>
-    </div>
+
     
     <?php
 	 }

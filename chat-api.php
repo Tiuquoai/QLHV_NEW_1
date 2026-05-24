@@ -1,7 +1,37 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-
+class ketnoiSV{
+	function ketnoi($ketnoi){
+		$ketnoi=mysql_connect('localhost','SinhVien','123456','qlhv');
+		mysql_set_charset("utf8");
+		if($ketnoi){
+			return mysql_select_db('qlhv');
+		}
+		else{
+			return false;
+		}
+		
+	}
+	function dongketnoi($ketnoi){
+		mysql_close($ketnoi);
+	}
+}
+$p=new ketnoiSV();
+$kn=$p->ketnoi($ketnoi);
+// var_dump($_SESSION);
+$mauser = $_SESSION['ma'];
+$sql = "SELECT * FROM user WHERE user_code = '$mauser'";
+$qr=mysql_query($sql);
+$r=mysql_fetch_assoc($qr);
+$tmp = null;
+if($r['vaitro'] == 0) {
+    $tmp = "hocsinh";
+}else if($r['vaitro'] == 1) {
+    $tmp = "giangvien";
+}else {
+    $tmp = "admin";
+}
 
 require './config.php';
 
@@ -25,14 +55,14 @@ $data = json_decode(file_get_contents('php://input'), true);
 
 $prompt = isset($data['prompt']) && trim($data['prompt']) !== ''
     ? trim($data['prompt'])
-    : "Có môn nào liên quan đến học về trí tuệ nhân tạo (AI) trong chuyên ngành Hệ Thống Thông Tin hong ??";
+    : "vậy trong ngành hệ thống thông tin tôi phải hc những môn gì vậy ??? kể tên vài môn đi";
 
 $payload = json_encode(array(
     "text" => $prompt
 ));
 
 $ch1 = curl_init();
-curl_setopt($ch1, CURLOPT_URL, "http://127.0.0.1:8000/embedding");
+curl_setopt($ch1, CURLOPT_URL, "http://127.0.0.1:8000/chat");
 curl_setopt($ch1, CURLOPT_POST, true);
 curl_setopt($ch1, CURLOPT_POSTFIELDS, $payload);
 curl_setopt($ch1, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
@@ -50,9 +80,12 @@ $vector_data = $rs['vector'];
 
 
 
+
 // var_dump($rs);
 
 // exit;
+
+// đúng
 
 $urlQdrant = "http://localhost:6333/collections/iuh_subjects/points/search";
 
@@ -93,42 +126,12 @@ foreach ($result2['result'] as $i => $item) {
     $context .= "- Mô tả: " . $p['text_content'] . "\n\n";
 }
 
+
 // var_dump($context);
 // exit;
 
-// $message = "
-// Bạn là một AI hỗ trợ sinh viên, thân thiện và dễ hiểu.
 
-// --- NGỮ CẢNH ---
-// Dưới đây là thông tin về các môn học:
-// $context
-
-
-// --- QUY TẮC ---
-// 1. Nếu câu hỏi liên quan đến ngành học:
-//    - Trả lời dựa trên thông tin đã cho
-//    - Có thể diễn giải lại cho dễ hiểu
-//    - Không tự thêm môn học không có trong dữ liệu
-//    - Không nhắc tới các môn ngoài chuyên ngành nếu người dùng hỏi cụ thể môn học trong chuyên ngành đó
-
-
-// 2. Nếu câu hỏi KHÔNG liên quan đến dữ liệu:
-//    - Trả lời bằng hiểu biết chung một cách hợp lý
-//    - Không cần phụ thuộc vào context
-
-// 3. Tuyệt đối:
-//    - Không nói 'dựa trên văn bản', 'dữ liệu cung cấp'
-//    - Không hỏi ngược lại
-//    - Không yêu cầu thêm thông tin
-
-// --- PHONG CÁCH ---
-// - Tự nhiên, giống người thật
-// - Ngắn gọn, rõ ràng
-// - Trả lời trực tiếp vào vấn đề
-
-// --- NHIỆM VỤ ---
-// Hãy trả lời câu hỏi của sinh viên
-// ";
+// đugs
 
 
 $message = "
@@ -151,10 +154,11 @@ Yêu cầu:
 - Nếu câu hỏi không liên quan tới dữ liệu thì trả lời bình thường bằng hiểu biết chung
 
 Câu hỏi của sinh viên:
+$prompt
 ";
 
 
-$kaka = $prompt;
+// $kaka = $prompt;
 
 
 
@@ -163,7 +167,8 @@ $ollamaUrl = CAL_LLM_CHAT;
 $payload = json_encode(array(
     // 'model' => 'llama3.2:3b',
     'message' => $message,
-    'asking' => $kaka
+    'role' => $tmp
+    // 'asking' => $kaka
 ));
 
 // Khởi tạo cURL
@@ -181,6 +186,9 @@ $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $error = curl_error($ch);
 curl_close($ch);
 
+// var_dump($response);
+// var_dump($httpCode);
+// exit;
 // Log lỗi để debug
 if ($error) {
     echo json_encode(array(
@@ -200,11 +208,12 @@ if ($httpCode !== 200) {
 
 $result = json_decode($response, true);
 
-// var_dump($result['choices'][0]['message']['content']);
+// var_dump($result);
 // exit;
 
-if (isset($result['choices'][0]['message']['content'])) {
-    echo json_encode(array('response' => $result['choices'][0]['message']['content']));
+
+if (isset($result['message'])) {
+    echo json_encode(array('response' => $result['message']));
 } else {
     echo json_encode(array(
         'error' => 'Không nhận được phản hồi từ AI',

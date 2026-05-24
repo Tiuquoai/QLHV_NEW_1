@@ -1,170 +1,146 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
-import pandas as pd
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
-from pathlib import Path
+from  apps.routers import ClientRouter
 from dotenv import load_dotenv
-import requests
 import os
+from pathlib import Path
 
+from qdrant_client import QdrantClient
+from qdrant_client.models import (
+    VectorParams,
+    Distance,
+    PointStruct
+)
 
-BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
+import pandas as pd
+
+# from qdrant_client import QdrantClient
+# from qdrant_client.models import (
+#     VectorParams,
+#     Distance,
+#     PointStruct
+# )
 
 app = FastAPI()
 
-# load 1 lần duy nhất
+COLLECTION_NAME = "iuh_subjects"
+# =========================
+# QDRANT
+# =========================
+client = QdrantClient(
+    url="http://localhost:6333"
+)
+
 model = SentenceTransformer('BAAI/bge-m3')
-client = QdrantClient(os.getenv('QDRANT_URL'))
-collection_name = "iuh_subjects"
 
-API_KEY = os.getenv('API_KEY')
-
-URL = os.getenv('GROQ_CLOUD_URL')
-
-
+env_path = (
+    Path(__file__)
+    .resolve()
+    .parent / '.env'
+)
 class RequestData(BaseModel):
     text: str
     
-class RequestCallOpenAi(BaseModel):
-    message : str 
-    asking : str
     
     
+load_dotenv(env_path)
+
+app.include_router(ClientRouter.router)
+
+print(os.getenv('MODEL_NAME'))
+
+
+@app.get('/')
+def home ():
+    return {
+        "message" : "Hello chào bạn đã đến đây hehehehehehehehehe"
+    }
     
-@app.post("/embedding")
+@app.post('/chat')
 def embed(data: RequestData):
     
     vector = model.encode(data.text).tolist()
     return { "vector" : vector }
 
 
+@app.get('/add-data')
+def add_data_to_embbedding ():
+    # =====================
+    # READ EXCEL
+    # =====================
+    file_path = "dulieudauvao.xlsx"
 
-# call api từ python
+    df = pd.read_excel(    Path(__file__)
+    .resolve()
+    .parent / 'dulieudauvao.xlsx' )
 
-@app.post("/chat")
-def callOpenAi (data : RequestCallOpenAi):
-    
-    # print(data.message)
-    
-    # print("/n")
-    
-    # print(data.asking)
-    
-    payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {"role": "system", "content": data.message },
-            {"role": "user", "content": data.asking}
-        ],
-        "temperature": 0.2
+    # =====================
+    # CREATE COLLECTION
+    # =====================
+    collections = client.get_collections().collections
+    collection_names = [c.name for c in collections]
+
+    if COLLECTION_NAME not in collection_names:
+
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(
+                size=1024,
+                distance=Distance.COSINE
+            )
+        )
+
+    # =====================
+    # CREATE POINTS
+    # =====================
+    points = []
+
+    for idx, row in df.iterrows():
+
+        text = str(row.get("text_content", ""))
+
+        # skip empty
+        if text.strip() == "":
+            continue
+
+        # =================
+        # EMBEDDING
+        # =================
+        vector = model.encode(text).tolist()
+
+        # =================
+        # PAYLOAD
+        # =================
+        payload = {
+            "machuyennganh": str(row.get("machuyennganh", "")),
+            "tenchuyennganh": str(row.get("tenchuyennganh", "")),
+            "tenhocphan": str(row.get("tenhocphan", "")),
+            "nhom_mon": str(row.get("nhom_mon", "")),
+            "tinh_chat_mon": str(row.get("tinh_chat_mon", "")),
+            "mo_ta_train": str(row.get("mo_ta_train", "")),
+            "hoc_duoc_gi": str(row.get("hoc_duoc_gi", "")),
+            "goi_y_hoc": str(row.get("goi_y_hoc", "")),
+            "text_content": text
+        }
+
+        point = PointStruct(
+            id=idx,
+            vector=vector,
+            payload=payload
+        )
+
+        points.append(point)
+
+    # =====================
+    # UPSERT
+    # =====================
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=points
+    )
+
+    return {
+        "message": "Add dữ liệu thành công 😼",
+        "total": len(points)
     }
-    
-    # return  {
-    #     "url" : os.getenv('QDRANT_URL'),
-    #     "api" : API_KEY
-    # }
-    
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
-    
-    
-
-    res = requests.post(URL, json=payload, headers=headers)
-
-    return res.json()
-
-# # @app.get("/run")
-# # def add_data ():
-#         # ======================
-#     # LOAD DATA
-#     # ======================
-#     BASE_DIR = Path(__file__).resolve().parent
-#     # print('okelalalala')
-#     file_path = BASE_DIR / "static" / "train_chatbot_iuh_fit_4nganh_30mon_capnhat.csv"
-#     df = pd.read_csv(file_path)
-#     print(df)
-#     # fix hidden space trong header
-#     df.columns = df.columns.str.strip()
-
-#     # ======================
-#     # CREATE COLLECTION
-#     # ======================
-#     print("Đang tạo collection...")
-
-#     client.recreate_collection(
-#         collection_name=collection_name,
-#         vectors_config=VectorParams(
-#             size=1024,
-#             distance=Distance.COSINE
-#         ),
-#     )
-
-#     # ======================
-#     # BUILD POINTS
-#     # ======================
-#     points = []
-
-#     print("Đang encode + đóng gói dữ liệu...")
-
-#     for idx, row in df.iterrows():
-
-#         text = f"{row['machuyennganh']} {row['tenhocphan']} {row['goi_y_hoc']}"
-
-#         vector = model.encode(text).tolist()
-        
-#         text_content = (
-#             f"Môn học {row['tenhocphan']} thuộc ngành {row['tenchuyennganh']}. "
-#             f"Nhóm môn: {row['nhom_mon']}. "
-#             f"Mô tả: {row['mo_ta_train']} "
-#             f"Sau khi học bạn sẽ: {row['hoc_duoc_gi']} "
-#             f"Lời khuyên: {row['goi_y_hoc']}"
-#         )
-
-#         payload_data = {
-#             "text_content": text_content,
-#             "machuyennganh": row["machuyennganh"],
-#             "tenhocphan": row["tenhocphan"],
-#             "goi_y_hoc": row["goi_y_hoc"],
-#             "tenchuyennganh": row["tenchuyennganh"],
-#             "nhom_mon": row["nhom_mon"]
-#         }
-        
-#         # row['text_content'] = (f"Môn học {row['tenhocphan']} thuộc ngành {row['tenchuyennganh']}. "
-#         #     f"Nhóm môn: {row['nhom_mon']}. "
-#         #     f"Mô tả: {row['mo_ta_train']} "
-#         #     f"Sau khi học bạn sẽ: {row['hoc_duoc_gi']} "
-#         #     f"Lời khuyên: {row['goi_y_hoc']}")
-
-#         # payload_data = {
-#         #     "machuyennganh": row["machuyennganh"],
-#         #     "tenhocphan": row["tenhocphan"],
-#         #     "goi_y_hoc": row["goi_y_hoc"],
-#         #     # "source_url": row["source_url"]
-#         # }
-
-#         points.append(
-#             PointStruct(
-#                 id=idx + 1,
-#                 vector=vector,
-#                 payload= payload_data
-#             )
-#         )
-
-#         # ======================
-#         # UPSERT TO QDRANT
-#         # ======================
-#         print(f"Đang push {len(points)} vectors...")
-        
-#     # print()
-
-#     client.upsert(
-#         collection_name=collection_name,
-#         points=points
-#     )
-
-#     print("✅ DONE - dữ liệu đã lên Qdrant")

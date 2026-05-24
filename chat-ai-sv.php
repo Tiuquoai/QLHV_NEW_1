@@ -1,5 +1,11 @@
 <?php
 session_start();
+
+
+
+// var_dump($r);
+// exit;
+
 if(!isset($_REQUEST['bm'])){
     echo header("refresh:0,url='index.php'");
 }
@@ -380,7 +386,7 @@ document.getElementById('chatForm').addEventListener('submit', async function(e)
     document.getElementById('messageInput').focus();
 });
 
-function addMessage(content, sender) {
+function addMessage(content, sender ) {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ' + sender;
