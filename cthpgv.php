@@ -2198,293 +2198,109 @@ else{
 
 ?>
 
-<?php /* Thêm Bài Tập */ ?>
+<?php /* Thêm Bài Tập Lý Thuyết */ ?>
 <?php
 session_start();
-include_once("Model/mKetNoiGV.php");
-$p=new ketnoiGV();
-$kn=$p->ketnoi($ketnoigv);
-if(isset($_POST['tbt'])){
-    $bd=$_POST['bd'];
-	$f=strtotime($bd);
-	$kt=$_POST['kt'];
-	$w=strtotime($kt);
-//file.zip
-$t=$_FILES['f']['type'];
-$s=$_FILES['f']['size'];
-if($s > 10*1024*1024){
-	echo "<script>alert('Kích thước file không được quá 10MB !')</script>";
-}
-if($t!='text/plain'&&$t!='application/x-zip-compressed'&&$t!='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-&&$t!='application/pdf'&&$t!='application/msword'&&$t!='application/x-rar-compressed'&&$t!='application/octet-stream'&&
-$t!='application/x-compressed'&&$t!='application/vnd.openxmlformats-officedocument.presentationml.presentation'){
-	echo "<script>alert('Định dạng file không được chấp nhận')</script>";
-}
-if($f>=$w){
-		 echo "<script>alert('Chọn lại ngày giờ cho phù hợp')</script>";
-}
-elseif($t=='application/x-zip-compressed'){
-	$a=$_FILES['f']['tmp_name'];
-	$b='file/'.$_FILES['f']['name'];
-	move_uploaded_file($a,$b);
-	
-    if (file_exists($zipFilePath)) {
-        $zip = new ZipArchive;
-
-        if ($zip->open($zipFilePath) === TRUE) {
-            $keywordFound = false;
-
-            // Duyệt qua các file trong file ZIP và kiểm tra từ khóa trong nội dung của chúng
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $fileContent = $zip->getFromIndex($i);
-
-                // Kiểm tra xem từ khóa có tồn tại trong nội dung của file không
-                if (strpos($fileContent,'Exec(')!=false||strpos($fileContent,'System')!=false||strpos($fileContent,'exec(')!=false||strpos($fileContent,'system(')!=
-	false||strpos($fileContent,'Eval(')!=false||strpos($fileContent,'eval(')!=false||strpos($fileContent,'Propen(')!=false||strpos($fileContent,'propen(')!=false||strpos($fileContent,'Phpinfo(')!=false||strpos($fileContent,'phpinfo(')!=false||strpos($fileContent,'Chmod(')!=false||strpos($fileContent,'chmod(')!=false) {
-                    $keywordFound = true;
-                    break;
-                }
-            }
-
-            $zip->close();
-
-            if ($keywordFound) {
-                // Xóa file ZIP nếu từ khóa được tìm thấy
-                if (unlink($zipFilePath)) {
-                    echo "<script> alert('File .zip chứa mã thực thi không thể upload !')</script>";
-                } else {
-					
-                    
-                }
+if(isset($_POST['addbt'])){
+    include_once("Model/mKetNoiGV.php");
+    $p = new ketnoiGV();
+    $kn = $p->ketnoi($ketnoigv);
+    
+    $td = $_POST['a'];
+    $bd = $_POST['bd'];
+    $kt = $_POST['kt'];
+    $ig = $_REQUEST['ig'];
+    $ihp = $_REQUEST['ihp'];
+    $il = $_POST['il'];
+    
+    $f_start = strtotime($bd);
+    $f_end = strtotime($kt);
+    
+    // Kiểm tra ngày hợp lệ
+    if($f_start >= $f_end){
+        echo "<script>alert('Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!')</script>";
+    } else {
+        // Kiểm tra file upload
+        if(!isset($_FILES['f']) || $_FILES['f']['error'] === UPLOAD_ERR_NO_FILE){
+            echo "<script>alert('Vui lòng chọn file để upload!')</script>";
+        } else {
+            $file_name = $_FILES['f']['name'];
+            $file_tmp = $_FILES['f']['tmp_name'];
+            $file_type = $_FILES['f']['type'];
+            $file_size = $_FILES['f']['size'];
+            $target_directory = 'file/';
+            
+            // Kiểm tra kích thước file
+            if($file_size > 10*1024*1024){
+                echo "<script>alert('Kích thước file không được quá 10MB!')</script>";
             } else {
-                $td=$_POST['a'];
-	$f=$_FILES['f']['name'];
-	$ig=$_REQUEST['ig'];
-	$ihp=$_REQUEST['ihp'];
-	$il=$_POST['il'];
-					
-					$sql="insert into baitaplythuyet(id_giangday, ngaydang) select id_giangday, now() from giangday where id_giangvien='$ig' and 
-					id=(select id from monlop where md5(id_hocphan)='$ihp' and id_lophocphan='$il')";
-					$qr=mysql_query($sql);
-					$sql1="update baitaplythuyet set tieude='$td', filebt='$f', batdaunop='$bd', ketthucnop='$kt'  where ngaydang=now() ";
-					$qr1=mysql_query($sql1);
-					echo header("refresh:0,url='cthpgv.php?bm=".$_REQUEST['bm']."&&ig=".$_REQUEST['ig']."&&ihp=".$_REQUEST['ihp']."&&il=".$_REQUEST['il']."&&gd#bt'");
+                // Di chuyển file trước khi kiểm tra
+                $target_file = $target_directory . basename($file_name);
+                if(move_uploaded_file($file_tmp, $target_file)){
+                    $allow_upload = true;
+                    $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+                    
+                    // Kiểm tra nội dung file cho các định dạng
+                    if($file_type == 'application/x-zip-compressed' || $file_ext == 'zip'){
+                        // Kiểm tra file ZIP
+                        $zip = new ZipArchive();
+                        if($zip->open($target_file) === TRUE){
+                            for($i = 0; $i < $zip->numFiles; $i++){
+                                $fileContent = $zip->getFromIndex($i);
+                                if($fileContent !== false && (strpos($fileContent, 'Exec(') !== false || strpos($fileContent, 'eval(') !== false || 
+                                   strpos($fileContent, 'system(') !== false || strpos($fileContent, 'phpinfo(') !== false)){
+                                    $allow_upload = false;
+                                    break;
+                                }
+                            }
+                            $zip->close();
+                        }
+                        if(!$allow_upload){
+                            unlink($target_file);
+                            echo "<script>alert('File ZIP chứa mã thực thi không được phép upload!')</script>";
+                        }
+                    } elseif($file_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || $file_ext == 'docx'){
+                        // Kiểm tra file DOCX
+                        $zip = new ZipArchive();
+                        if($zip->open($target_file) === true){
+                            $content = $zip->getFromName('word/document.xml');
+                            $zip->close();
+                            if($content !== false){
+                                $content = strip_tags($content);
+                                if(strpos($content, 'Exec(') !== false || strpos($content, 'eval(') !== false || 
+                                   strpos($content, 'system(') !== false || strpos($content, 'phpinfo(') !== false){
+                                    $allow_upload = false;
+                                    unlink($target_file);
+                                    echo "<script>alert('File DOCX chứa mã thực thi không được phép upload!')</script>";
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Nếu file hợp lệ, lưu vào database
+                    if($allow_upload && $kn){
+                        $sql = "INSERT INTO baitaplythuyet(id_giangday, ngaydang, tieude, filebt, batdaunop, ketthucnop) 
+                                SELECT id_giangday, NOW(), '$td', '$file_name', '$bd', '$kt' 
+                                FROM giangday 
+                                WHERE id_giangvien='$ig' 
+                                AND id=(SELECT id FROM monlop WHERE md5(id_hocphan)='$ihp' AND id_lophocphan='$il')";
+                        $qr = mysql_query($sql);
+                        
+                        if($qr){
+                            echo "<script>alert('Thêm bài tập thành công!'); window.location.href='cthpgv.php?bm=".$_REQUEST['bm']."&&ig=".$_REQUEST['ig']."&&ihp=".$_REQUEST['ihp']."&&il=".$_REQUEST['il']."&&gd#bt';</script>";
+                            exit();
+                        } else {
+                            unlink($target_file);
+                            echo "<script>alert('Lỗi khi lưu vào database!')</script>";
+                        }
+                    }
+                } else {
+                    echo "<script>alert('Lỗi khi upload file!')</script>";
+                }
             }
-        } else {
-            echo "Không thể mở file ZIP.";
-        }
-    } else {
-        echo "File ZIP không tồn tại.";
-    }
-	
-}
-elseif($t=='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){
-	$filename = $_FILES['f']['tmp_name'];
-	$filetype = $_FILES['f']['type'];
-
-    // if(!$filename || !file_exists($filename)){
-    //     echo "File không tồn tại.";
-    //     return;
-    // }
-
-    $zip = new ZipArchive;
-    if ($zip->open($filename) === true) {
-        $content = $zip->getFromName('word/document.xml');
-        $zip->close();
-
-        $content = strip_tags($content);
-        $content = html_entity_decode($content);
-    } else {
-        echo "<script> alert('Không thể mở tệp .zip !')</script>";
-    }
-	if(strpos($content,'Exec(')!=false||strpos($content,'System')!=false||strpos($content,'exec(')!=false||strpos($content,'system(')!=
-	false||strpos($content,'Eval(')!=false||strpos($content,'eval(')!=false||strpos($content,'Propen(')!=false||strpos($content,'propen(')!=false||strpos($content,'Phpinfo(')!=false||strpos($content,'phpinfo(')!=false||strpos($content,'Chmod(')!=false||strpos($content,'chmod(')!=false){
-		echo "<script> alert('File .docx chứa mã thực thi không thể upload !')</script>";
-	}
-	else{
-		$td=$_POST['a'];
-	$f=$_FILES['f']['name'];
-	$ig=$_REQUEST['ig'];
-	$ihp=$_REQUEST['ihp'];
-	$il=$_POST['il'];
-	$target_directory = 'file/';
-                $target_file = $target_directory.basename($f);
-                move_uploaded_file($_FILES['f']['tmp_name'], $target_file );
-	$sql="insert into baitaplythuyet(id_giangday, ngaydang) select id_giangday, now() from giangday where id_giangvien='$ig' and 
-	id=(select id from monlop where md5(id_hocphan)='$ihp' and id_lophocphan='$il')";
-	$qr=mysql_query($sql);
-	$sql1="update baitaplythuyet set tieude='$td', filebt='$f', batdaunop='$bd', ketthucnop='$kt'  where ngaydang=now() ";
-	$qr1=mysql_query($sql1);
-	echo header("refresh:0,url='cthpgv.php?bm=".$_REQUEST['bm']."&&ig=".$_REQUEST['ig']."&&ihp=".$_REQUEST['ihp']."&&il=".$_REQUEST['il']."&&gd#bt'");
-	}
-}
-elseif($t=='application/vnd.openxmlformats-officedocument.presentationml.presentation'){
-	class DocxConversion {
-    private $filename;
-
-    function __construct($filePath) {
-        $this->filename = $_FILES['f']['tmp_name'];
-    }
-        function pptx_to_text() {
-        $zip_handle = new ZipArchive;
-        $output_text = "";
-        $slide_number = 1; // loop through slide files
-
-        if (true === $zip_handle->open($this->filename)) {
-            while (($xml_index = $zip_handle->locateName("ppt/slides/slide" . $slide_number . ".xml")) !== false) {
-                $xml_datas = $zip_handle->getFromIndex($xml_index);
-                $xml_handle = new DOMDocument;
-                $xml_handle->loadXML($xml_datas, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
-                $output_text .= strip_tags($xml_handle->saveXML());
-                $slide_number++;
-            }
-
-            if ($slide_number == 1) {
-                $output_text .= "";
-            }
-
-            $zip_handle->close();
-        } else {
-            $output_text .= "";
-        }
-
-        return $output_text;
-    }
-
-    function convertToText() {
-        if (isset($this->filename) && !file_exists($this->filename)) {
-            return "File Not exists";
-        }
-
-        $fileArray = pathinfo($this->filename);
-        $file_ext  = $fileArray['extension'];
-
-        if ($file_ext == "doc" || $file_ext == "docx" || $file_ext == "xlsx" || $file_ext == "pptx") {
-            if ($file_ext == "pptx") {
-                return $this->pptx_to_text();
-            }
-        } else {
-            return "Invalid File Type";
         }
     }
-	}
-	$docObj = new DocxConversion($_FILES['f']['name']); // replace your document name with the correct extension doc or docx
-$content = $docObj->convertToText();
-if(strpos($content,'Exec(')!=false||strpos($content,'System')!=false||strpos($content,'exec(')!=false||strpos($content,'system(')!=
-	false||strpos($content,'Eval(')!=false||strpos($content,'eval(')!=false||strpos($content,'Propen(')!=false||strpos($content,'propen(')!=false||strpos($content,'Phpinfo(')!=false||strpos($content,'phpinfo(')!=false||strpos($content,'Chmod(')!=false||strpos($content,'chmod(')!=false){
-		echo "<script> alert('File .pptx chứa mã thực thi không thể upload !')</script>";
-		unlink("file/".$_FILES['f']['name']);
-	}
-	else{
-		$td=$_POST['a'];
-	$f=$_FILES['f']['name'];
-	$ig=$_REQUEST['ig'];
-	$ihp=$_REQUEST['ihp'];
-	$il=$_POST['il'];
-	$target_directory = 'file/';
-                $target_file = $target_directory.basename($f);
-                move_uploaded_file($_FILES['f']['tmp_name'], $target_file );
-	$sql="insert into baitaplythuyet(id_giangday, ngaydang) select id_giangday, now() from giangday where id_giangvien='$ig' and 
-	id=(select id from monlop where md5(id_hocphan)='$ihp' and id_lophocphan='$il')";
-	$qr=mysql_query($sql);
-	$sql1="update baitaplythuyet set tieude='$td', filebt='$f', batdaunop='$bd', ketthucnop='$kt'  where ngaydang=now() ";
-	$qr1=mysql_query($sql1);
-	echo header("refresh:0,url='cthpgv.php?bm=".$_REQUEST['bm']."&&ig=".$_REQUEST['ig']."&&ihp=".$_REQUEST['ihp']."&&il=".$_REQUEST['il']."&&gd#bt'");
-	}
 }
-elseif($t=='application/octet-stream'||$t=='text/plain'){
-	$filePath = $_FILES['f']['tmp_name']; // Đường dẫn đến file PHP bạn muốn quét
-
-$fileContent = file_get_contents($filePath);
-
-if ($fileContent !== false) {
-    if (strpos($fileContent,'Exec(')!=false||strpos($fileContent,'System')!=false||strpos($fileContent,'exec(')!=false||strpos($fileContent,'system(')!=
-	false||strpos($fileContent,'Eval(')!=false||strpos($fileContent,'eval(')!=false||strpos($fileContent,'Propen(')!=false||strpos($fileContent,'propen(')!=false||strpos($fileContent,'Phpinfo(')!=false||strpos($fileContent,'phpinfo(')!=false||strpos($fileContent,'Chmod(')!=false||strpos($fileContent,'chmod(')!=false) {
-		unlink($filePath);
-       echo "<script> alert('File .txt / .php chứa mã thực thi không thể upload !')</script>";
-        // Thực hiện các hành động khi tìm thấy từ khóa trong file PHP
-    } else {
-        // Thực hiện các hành động khi không tìm thấy từ khóa trong file PHP
-		$td=$_POST['a'];
-	$f=$_FILES['f']['name'];
-	$ig=$_REQUEST['ig'];
-	$ihp=$_REQUEST['ihp'];
-	$il=$_POST['il'];
-	$target_directory = 'file/';
-                $target_file = $target_directory.basename($f);
-                move_uploaded_file($_FILES['f']['tmp_name'], $target_file );
-					
-					$sql="insert into baitaplythuyet(id_giangday, ngaydang) select id_giangday, now() from giangday where id_giangvien='$ig' and 
-					id=(select id from monlop where md5(id_hocphan)='$ihp' and id_lophocphan='$il')";
-					$qr=mysql_query($sql);
-					$sql1="update baitaplythuyet set tieude='$td', filebt='$f', batdaunop='$bd', ketthucnop='$kt'  where ngaydang=now() ";
-					$qr1=mysql_query($sql1);
-					echo header("refresh:0,url='cthpgv.php?bm=".$_REQUEST['bm']."&&ig=".$_REQUEST['ig']."&&ihp=".$_REQUEST['ihp']."&&il=".$_REQUEST['il']."&&gd#bt'");
-    }
-} else {
-    echo "Không thể đọc file.";
-}
-}
-}
-/*
-	$size=$_FILES['f']['size'];
-	$type=$_FILES['f']['type'];
-if($size > 10*1024*1024){
-	echo "<script>alert('Quá Lớn!')</script>";
-}
-elseif($type!="application/vnd.openxmlformats-officedocument.wordprocessingml.document"&&$type!="application/msword"&&
-$type!="application/pdf"&&$type!="application/zip"){
-	echo "<script>alert('Tập Tin Định Dạng Không Chấp Nhận')</script>";
-}
-elseif($f>=$w){
-		 echo "<script>alert('Chọn lại ngày giờ cho phù hợp')</script>";
-	 }
-else{
-	 $filename = $_FILES['f']['tmp_name'];
-	$filetype = $_FILES['f']['type'];
-
-    if(!$filename || !file_exists($filename)){
-        echo "File không tồn tại.";
-        return;
-    }
-
-    $zip = new ZipArchive;
-    if ($zip->open($filename) === true) {
-        $content = $zip->getFromName('word/document.xml');
-        $zip->close();
-
-        $content = strip_tags($content);
-        $content = html_entity_decode($content);
-    } else {
-        echo "<script> alert('Không thể mở tệp .zip !')</script>";
-    }
-	if(strpos($content,'Exec(')!=false||strpos($content,'System')!=false||strpos($content,'exec(')!=false||strpos($content,'system(')!=
-	false||strpos($content,'Eval(')!=false||strpos($content,'eval(')!=false||strpos($content,'Propen(')!=false||strpos($content,'propen(')!=false||strpos($content,'Phpinfo(')!=false||strpos($content,'phpinfo(')!=false||strpos($content,'Chmod(')!=false||strpos($content,'chmod(')!=false){
-		echo "<script> alert('Đã phát hiện shell web tiềm năng không cho upload !')</script>";
-	}
-	else{
-		$target_directory = 'file/';
-		$f=$_FILES['f']['name'];
-    $target_file = $target_directory.basename($f);
-    move_uploaded_file($_FILES['f']['tmp_name'], $target_file );
-				if($kn){
-	$td=$_POST['a'];
-	$f=$_FILES['f']['name'];
-	$ig=$_REQUEST['ig'];
-	$ihp=$_REQUEST['ihp'];
-	$il=$_POST['il'];
-					
-					$sql="insert into baitaplythuyet(id_giangday, ngaydang) select id_giangday, now() from giangday where id_giangvien='$ig' and 
-					id=(select id from monlop where md5(id_hocphan)='$ihp' and id_lophocphan='$il')";
-					$qr=mysql_query($sql);
-					$sql1="update baitaplythuyet set tieude='$td', filebt='$f', batdaunop='$bd', ketthucnop='$kt'  where ngaydang=now() ";
-					$qr1=mysql_query($sql1);
-					echo header("refresh:0,url='cthpgv.php?bm=".$_REQUEST['bm']."&&ig=".$_REQUEST['ig']."&&ihp=".$_REQUEST['ihp']."&&il=".$_REQUEST['il']."&&gd#bt'");
-	}
-				}
-}
-/* } */
-
 ?>
 
 <?php /* Thêm Nộp Bài Tập Thực Hành */ ?>
@@ -2585,200 +2401,622 @@ else{
 <link rel="stylesheet" type="text/css" href="css/bootstrap.css"/>
 <script type="text/javascript" src="js/bootstrap.js"></script>
 <style>
+/* === BASE STYLES === */
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: #f0f2f5;
     min-height: 100vh;
+    margin: 0;
 }
-a{
-    color:#333;
+a {
+    color: #333;
+    transition: all 0.3s ease;
 }
-a:hover{
-    color:#667eea;
+a:hover {
+    color: #667eea;
+    text-decoration: none;
 }
-.b1{
-	border-radius:50%;
+
+/* === MODERN HEADER STYLES === */
+.modern-header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
-.b2{
-	border-radius:50%;
-	background-color:#CFC;
+
+.main-header {
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
-.top-bar-gradient {
+
+.header-top-bar {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 10px 0;
 }
-.btn-modern {
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand-logo {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.brand-text h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-text p {
+    margin: 0;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.nav-tabs-custom {
+    display: flex;
+    gap: 8px;
+}
+
+.nav-tab {
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #6b7280;
+    background: #f3f4f6;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-tab:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.nav-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.nav-tab i {
+    font-size: 16px;
+}
+
+.header-user {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    background: #f8fafc;
+    border-radius: 50px;
+}
+
+.user-home-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 10px 20px;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-.btn-modern:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-    color: white;
-}
-.card-modern {
-    background: white;
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-    margin-bottom: 30px;
-}
-.tab-active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    color: #fff;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
 }
-.tab-inactive {
-    background: #f0f0f0;
-    color: #555;
+
+.user-home-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    color: #fff;
 }
-.footer-modern {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    color: white;
-    padding: 40px 0;
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
-.user-avatar {
-    width: 50px;
-    height: 50px;
+
+.user-avatar-header {
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     object-fit: cover;
     border: 3px solid #667eea;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+}
+
+.user-name {
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+}
+
+.user-role {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* Course Title Section */
+.course-title-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px 30px;
+    margin: 20px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+}
+
+.course-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.course-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.course-icon i {
+    font-size: 28px;
+    color: #fff;
+}
+
+.course-title h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.course-title p {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+}
+
+/* === FOOTER STYLES === */
+.modern-footer {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    margin-top: 40px;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+}
+
+.footer-main {
+    padding: 60px 30px 40px;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 50px;
+}
+
+.footer-brand {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.footer-logo img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.footer-logo h3 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.footer-brand p {
+    color: #9ca3af;
+    line-height: 1.8;
+    margin-bottom: 24px;
+}
+
+.footer-social {
+    display: flex;
+    gap: 12px;
+}
+
+.social-link {
+    width: 42px;
+    height: 42px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.social-link:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transform: translateY(-3px);
+    color: #fff;
+}
+
+.footer-section h4 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 24px 0;
+    color: #fff;
+    position: relative;
+    padding-bottom: 12px;
+}
+
+.footer-section h4::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 12px;
+}
+
+.footer-links a {
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: #fff;
+    padding-left: 8px;
+}
+
+.footer-links a i {
+    font-size: 12px;
+    color: #667eea;
+}
+
+.footer-contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.contact-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.contact-icon i {
+    color: #667eea;
+    font-size: 18px;
+}
+
+.contact-text {
+    flex: 1;
+}
+
+.contact-text strong {
+    display: block;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.contact-text span {
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.footer-bottom {
+    background: rgba(0,0,0,0.2);
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-bottom p {
+    margin: 0;
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.footer-bottom-links {
+    display: flex;
+    gap: 24px;
+}
+
+.footer-bottom-links a {
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.footer-bottom-links a:hover {
+    color: #fff;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 992px) {
+    .header-content {
+        flex-direction: column;
+        gap: 16px;
+        padding: 15px;
+    }
+    .nav-tabs-custom {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+    .footer-bottom {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-tab span {
+        display: none;
+    }
+    .nav-tab {
+        padding: 12px 16px;
+    }
+    .header-user {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .course-title-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+    }
 }
 </style>
 </head>
 
 <body>
-<div class="container mw-100 border">
 
-<div class="row header"  id="codinh">
-<!--Đây là phần banner-->
-<div class="row header col-xs-12 col-sm-12 col-md-12 col-lg-12 top-bar-gradient" style="height:30px; margin: 0px;" id="codinh">
-&nbsp;<center></center><p style="color:#FFF">Gọi Điện: 0143.234.563 - ext 808 &nbsp; &nbsp; Email: csm@gmail.com</p> 
+<!-- ==================== MODERN HEADER ==================== -->
+<div class="main-header">
+    <!-- Top Bar -->
+    <div class="header-top-bar">
+        <div class="container-fluid">
+            <div class="header-content" style="color: #fff; font-size: 13px;">
+                <div style="display: flex; align-items: center; gap: 24px;">
+                    <span><i class="fas fa-phone-alt"></i> 0143.234.563 - ext 808</span>
+                    <span><i class="fas fa-envelope"></i> csm@gmail.com</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span id="currentTime"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Header -->
+    <div class="container-fluid py-3">
+        <div class="header-content">
+            <!-- Brand -->
+            <div class="header-brand">
+                <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo" class="brand-logo" />
+                <div class="brand-text">
+                    <h1>Hệ Thống Quản Lý</h1>
+                    <p>Trường Cao Đẳng Sư Phạm</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="header-nav">
+                <div class="nav-tabs-custom">
+                    <?php if(isset($_REQUEST['gd'])){ ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd" class="nav-tab active">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>HP Giảng Dạy</span>
+                    </a>
+                    <?php } else { ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd" class="nav-tab">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>HP Giảng Dạy</span>
+                    </a>
+                    <?php } ?>
+                    
+                    <?php if(isset($_REQUEST['ds'])){ ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&ds" class="nav-tab active">
+                        <i class="fas fa-users"></i>
+                        <span>Danh Sách SV</span>
+                    </a>
+                    <?php } else { ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&ds" class="nav-tab">
+                        <i class="fas fa-users"></i>
+                        <span>Danh Sách SV</span>
+                    </a>
+                    <?php } ?>
+                    
+                    <?php if(isset($_REQUEST['qld'])){ ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&qld" class="nav-tab active">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Quản Lý Điểm</span>
+                    </a>
+                    <?php } else { ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&qld" class="nav-tab">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Quản Lý Điểm</span>
+                    </a>
+                    <?php } ?>
+                </div>
+            </div>
+
+            <!-- User Info -->
+            <div class="header-user">
+                <?php
+                include_once("Model/mKetNoiADHT.php");
+                $p=new ketnoiAD();
+                $kn=$p->ketnoi($ketnoi);
+                if($kn){
+                    $bm=$_REQUEST['bm'];
+                    $sql="select *from user u join giangvien g on u.user_id=g.user_id where user_code='$bm' ";
+                    $asv=mysql_query($sql);
+                    $t=mysql_fetch_assoc($asv);
+                }
+                $anh=$t['anh'];
+                ?>
+                <a href="homeGV.php?bm=<?php echo $_REQUEST['bm']; ?>" class="user-home-btn">
+                    <i class="fas fa-home"></i>
+                    <span>Trang Chủ</span>
+                </a>
+                <div class="user-info">
+                    <a href="info1.php?bm=<?php echo $_REQUEST['bm'] ?>">
+                        <?php if(!preg_match("/^[A-Za-z]{1,100}[.(jpg|png)]{3}/",$anh)){ ?>
+                            <img src="<?php echo $anh?>" alt="Avatar" class="user-avatar-header" />
+                        <?php } else { ?>
+                            <img src="img/<?php echo $anh?>" alt="Avatar" class="user-avatar-header" />
+                        <?php } ?>
+                    </a>
+                    <div>
+                        <a href="info1.php?bm=<?php echo $_REQUEST['bm'] ?>" class="user-name"><?php echo $t['hotengiangvien'] ?></a>
+                        <div class="user-role">Giảng Viên</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-<p></p>
-</div>
-<div>
-<p></p>
-<div class="row">
-<div class="col-xs-3 col-md-3 col-lg-3 col-md-3">
-<a href="homeGV.php?bm=<?php echo $_REQUEST['bm']; ?>"><img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" height="75px" width="120px" /></a>
-</div>
-<div class="col-xs-6 col-md-6 col-lg-6 col-md-6">
-</div>
-<div class="col-xs-1 col-md-1 col-lg-1 col-md-1">
-<a href="homeGV.php?bm=<?php echo $_REQUEST['bm']; ?>"><center><img src="https://tse4.mm.bing.net/th?id=OIP.NSlKGZ5lB61nmNw99CGwlwHaHa&pid=Api&P=0&h=180" height="50px" width="50px"  /></a><br /><p></p><a href="homeGV.php?bm=<?php echo $_REQUEST['bm']; ?>">Nhà Của Tôi</a></center>
-</div>
-<div class="col-xs-2 col-md-2 col-lg-2 col-md-2">
-<?php
-include_once("Model/mKetNoiADHT.php");
-$p=new ketnoiAD();
-$kn=$p->ketnoi($ketnoi);
-if($kn){
-	$bm=$_REQUEST['bm'];
-	$sql="select *from user u join giangvien g on u.user_id=g.user_id where user_code='$bm' ";
-	$asv=mysql_query($sql);
-	$t=mysql_fetch_assoc($asv);
-}
-$anh=$t['anh'];
-if(!preg_match("/^[A-Za-z]{1,100}[.(jpg|png)]{3}/",$anh)){
-	?>
-    <center><a href="info1.php?bm=<?php echo $_REQUEST['bm'] ?>"><img src="<?php echo $anh?>" height="50px" width="50px" class="rounded-circle" /></a></center>
-	<?php
-}
-else{
-	?>
-	<center><a href="info1.php?bm=<?php echo $_REQUEST['bm'] ?>"><img src="img/<?php echo $anh?>" height="50px" width="50px" class="rounded-circle" /></a></center>
-    <?php
-}
-?>
-<p></p>
-<center><ac><a href="info1.php?bm=<?php echo $_REQUEST['bm'] ?>"><?php echo $t['hotengiangvien'] ?></a></ac></center>
-</div>
-</div>
-</div>
-<p></p>
+
+<!-- ==================== COURSE TITLE SECTION ==================== -->
 <?php
 $ihp=$_REQUEST['ihp'];
 $sql="select * from hocphan where md5(id_hocphan)='$ihp' ";
 $qr=mysql_query($sql);
 $ttm=mysql_fetch_assoc($qr);
 ?>
-<h5 style="color:#F63; font-size:25px;"><?php echo $ttm['tenhocphan']; ?></h5>
-<br /><br />
-<div class="row">
-	<div class="col-xs-3 col-sm-3 col-md-3 col-lg-4">
-    </div>
-    <div class="col-xs-8 col-sm-8 col-md-8 col-lg-6">
-     <div class="row">
-     <?php if(isset($_REQUEST['gd'])){ ?>
-     <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 tab-active" style="padding:2px; height:60px; border-radius: 10px">
-     <p></p>
-         <center><strong><a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php 
-		  echo $_REQUEST['ihp']?>&&il=<?php echo $_REQUEST['il']?>&&gd"><n  style="color:white;" >HP Giảng Dạy</n></a></strong></center>
-    </div>
-     <?php } else{ ?>
-     <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2" style="background-color:#f8f8f8; padding:2px; height:60px; border-radius: 5px">
-     <p></p>
-         <center><strong><a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php 
-		  echo $_REQUEST['ihp']?>&&il=<?php echo $_REQUEST['il']?>&&gd">HP Giảng Dạy</a></strong></center>
-    </div>
-    <?php } ?>
-    &nbsp;
-    <?php if(isset($_REQUEST['ds'])){ ?>
-     <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 tab-active" style="padding:2px; height:60px; border-radius: 10px">
-     <p></p>
-         <center><strong><a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php 
-		  echo $_REQUEST['ihp']?>&&il=<?php echo $_REQUEST['il']?>&&ds"><n  style="color:white;">Danh Sách SV</n></a></strong></center>
-    </div>
-     <?php } else{ ?>
-     <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2" style="background-color:#f8f8f8; padding:2px; height:60px; border-radius: 5px">
-     <p></p>
-         <center><strong><a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php 
-		  echo $_REQUEST['ihp']?>&&il=<?php echo $_REQUEST['il']?>&&ds">Danh Sách SV</a></strong></center>
-    </div>
-    <?php } ?>
-    &nbsp;
-   
-     <?php if(isset($_REQUEST['qld'])){ ?>
-     <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 tab-active" style="padding:2px; height:60px; border-radius: 10px">
-     <p></p>
-         <center><strong><a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php 
-		  echo $_REQUEST['ihp']?>&&il=<?php echo $_REQUEST['il']?>&&qld"><n  style="color:white;">Quản Lý Điểm</n></a></strong></center>
-    </div>
-     <?php } else{ ?>
-     <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2" style="background-color:#f8f8f8; padding:2px; height:60px; border-radius: 5px">
-     <p></p>
-         <center><strong><a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php 
-		  echo $_REQUEST['ihp']?>&&il=<?php echo $_REQUEST['il']?>&&qld">Quản Lý Điểm</a></strong></center>
-    </div>
-    <?php } ?>
-    &nbsp;
-    <?php
-	/*
-	?>
-    <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2" style="background-color:#f8f8f8; padding:2px; height:60px; border-radius: 5px">
-    <p></p>
-        <center><strong>Thông Báo</strong></center>
-    </div>
-	<?php
-	*/ ?>
-     </div>
-    </div>
-    <div class="col-xs-1 col-sm-1 col-md-1 col-lg-2">
+<div class="container-fluid px-4">
+    <div class="course-title-section">
+        <div class="course-title">
+            <div class="course-icon">
+                <i class="fas fa-book-open"></i>
+            </div>
+            <div>
+                <h2><?php echo $ttm['tenhocphan']; ?></h2>
+                <p><i class="fas fa-code"></i> <?php echo $ttm['mahocphan']; ?></p>
+            </div>
+        </div>
+            <div>
+                <a href="homeGV.php?bm=<?php echo $_REQUEST['bm'] ?>" class="btn btn-light btn-lg" style="border-radius: 50px; padding: 12px 30px;">
+                    <i class="fas fa-arrow-left mr-2"></i> Quay Lại
+                </a>
+            </div>
     </div>
 </div>
-<br />
+
+<div class="container-fluid px-4 pb-5">
 <?php
 if(isset($_REQUEST['qld'])){
 	?>
-    <div class="row">
-    	<div class="col-xs-1 col-sm-1 col-md-1 col-lg-1">
+    <!-- ==================== QUẢN LÝ ĐIỂM - MODERN UI ==================== -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <div style="background: #fff; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); overflow: hidden; animation: fadeInUp 0.5s ease;">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px 30px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-chart-line" style="font-size: 24px; color: #fff;"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 20px; font-weight: 600; color: #fff;">Quản Lý Điểm</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.8);">Nhập và quản lý điểm sinh viên</p>
+                </div>
+            </div>
+            <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&bdtk" 
+               style="display: inline-flex; align-items: center; gap: 10px; background: #fff; color: #667eea; padding: 12px 24px; border-radius: 50px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                <i class="fas fa-chart-pie"></i>
+                <span>Thống Kê</span>
+            </a>
         </div>
-        <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10 border">
-        	<p></p>
+
+        <!-- Upload Section -->
+        <div style="padding: 24px;">
             <?php 
 			$il=$_REQUEST['il'];
 			$ihp=$_REQUEST['ihp'];
@@ -2787,54 +3025,107 @@ if(isset($_REQUEST['qld'])){
 			$qr=mysql_query($sql);
 			if(mysql_num_rows($qr)==1){
 			?>
-            <p></p>
-            <center><h5>Phần Sửa Điểm</h5></center>
-            <p></p>
-            <form action="#" method="post" enctype="multipart/form-data">
-            <center>Upload File Điểm:&nbsp;<input type="file" name="f" required="required" /></center>
-            <p></p>
-            <center><input type="submit" value="OK" name="editd" /></center> 
-            </form>
+            <!-- Edit Score Section -->
+            <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #fcd34d; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                    <div style="width: 48px; height: 48px; background: #f59e0b; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-edit" style="font-size: 20px; color: #fff;"></i>
+                    </div>
+                    <div>
+                        <h5 style="margin: 0; color: #92400e;">Cập Nhật Điểm</h5>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; color: #b45309;">Tải lên file điểm mới để cập nhật</p>
+                    </div>
+                </div>
+                <form action="#" method="post" enctype="multipart/form-data">
+                    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <i class="fas fa-file-excel" style="position: absolute; left: 16px; color: #10b981; font-size: 20px;"></i>
+                                <input type="file" name="f" required style="width: 100%; padding: 14px 18px 14px 50px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; transition: all 0.3s ease;" />
+                            </div>
+                        </div>
+                        <button type="submit" name="editd" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 14px 28px; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                            <i class="fas fa-upload"></i> Cập Nhật
+                        </button>
+                    </div>
+                </form>
+            </div>
             <?php
 			}
 			else{
 			?>
-            <center><h5>Phần Nhập Điểm</h5></center>
-            <p></p>
-            <form action="#" method="post" enctype="multipart/form-data">
-            <center>Upload File Điểm:&nbsp;<input type="file" name="f" required="required"  /></center>
-            <p></p>
-            <center><input type="submit" name="ld" value="OK" /></center>
-            </form>
-            <p></p>
-            <p></p>
-            <center><i>( Để Upload File Điểm Quý Thầy Cô Vui Lòng Upload Lại File Đã Tải Bên Mục Danh Sách Sinh Viên . Xin Cảm Ơn ! )</i></center>           <?php } ?>
-            <hr/>
-            <center><h5>Danh Sách Sinh Viên Đã Lên Điểm&nbsp;&nbsp;&nbsp;<a href=
-            "cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&bdtk"><img src=
-            "https://tse4.mm.bing.net/th?id=OIP.A8SgPPVJMf9aQvqD-NHX-gHaHa&pid=Api&P=0&h=180" height="40px" width="40px" /></a></h5></center>
-            <br />
-            <form action="#" method="post" enctype="multipart/form-data">
-            	&nbsp;Họ Tên SV: &nbsp;<input type="text" name="a" />&nbsp;Mã Số SV: &nbsp; <input type="text" name="b" />&nbsp;
-                <input type="submit" name="as" value="OK" />
-            </form>
-            <br />
-            <table class="table table-bordered col-xs-12 col-sm-12 col-md-12 col-lg-12">
-            	<thead>
-                <tr>
-                	<th>STT</th>
-                    <th>MSSV</th>
-                    <th>Tên Sinh Viên</th>
-                    <th>TK1</th>
-                    <th>TK2</th>
-                    <th>TK3</th>
-                     <th>GK</th>
-                      <th>TH1</th>
-                       <th>TH2</th>
-                        <th>TH3</th>
-                         <th>CK</th>
-                          <th><center>ĐTB</center></th>
-                </tr>
+            <!-- Upload Score Section -->
+            <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px dashed #10b981; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                    <div style="width: 48px; height: 48px; background: #10b981; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-file-import" style="font-size: 20px; color: #fff;"></i>
+                    </div>
+                    <div>
+                        <h5 style="margin: 0; color: #065f46;">Nhập Điểm Từ File</h5>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; color: #047857;">Hỗ trợ định dạng Excel (.xlsx, .xls)</p>
+                    </div>
+                </div>
+                <form action="#" method="post" enctype="multipart/form-data">
+                    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <i class="fas fa-file-excel" style="position: absolute; left: 16px; color: #10b981; font-size: 20px;"></i>
+                                <input type="file" name="f" required style="width: 100%; padding: 14px 18px 14px 50px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; transition: all 0.3s ease;" />
+                            </div>
+                        </div>
+                        <button type="submit" name="ld" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; padding: 14px 28px; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                            <i class="fas fa-check"></i> Nhập Điểm
+                        </button>
+                    </div>
+                </form>
+                <div style="margin-top: 16px; padding: 12px 16px; background: rgba(255,255,255,0.7); border-radius: 8px;">
+                    <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                        <i class="fas fa-info-circle" style="color: #667eea; margin-right: 6px;"></i>
+                        Để Upload File Điểm, vui lòng tải File mẫu từ mục Danh Sách Sinh Viên trước khi nhập điểm.
+                    </p>
+                </div>
+            </div>
+            <?php } ?>
+
+            <!-- Search Form -->
+            <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                <form action="#" method="post" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="position: relative;">
+                            <i class="fas fa-user" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af;"></i>
+                            <input type="text" name="a" placeholder="Họ tên SV..." style="padding: 12px 16px 12px 42px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; min-width: 200px; transition: all 0.3s ease;" />
+                        </div>
+                        <div style="position: relative;">
+                            <i class="fas fa-id-badge" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af;"></i>
+                            <input type="text" name="b" placeholder="Mã số SV..." style="padding: 12px 16px 12px 42px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; min-width: 150px; transition: all 0.3s ease;" />
+                        </div>
+                    </div>
+                    <button type="submit" name="as" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 12px 24px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                        <i class="fas fa-search"></i> Tìm Kiếm
+                    </button>
+                </form>
+            </div>
+
+            <!-- Score Table -->
+            <div style="background: #f8fafc; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <th style="padding: 16px 12px; text-align: center; font-weight: 600; color: #fff; font-size: 13px; border-bottom: none;">STT</th>
+                            <th style="padding: 16px 12px; text-align: left; font-weight: 600; color: #fff; font-size: 13px; border-bottom: none;">MSSV</th>
+                            <th style="padding: 16px 12px; text-align: left; font-weight: 600; color: #fff; font-size: 13px; border-bottom: none;">Họ Tên</th>
+                            <th style="padding: 16px 8px; text-align: center; font-weight: 600; color: #fff; font-size: 12px; border-bottom: none;">TK1</th>
+                            <th style="padding: 16px 8px; text-align: center; font-weight: 600; color: #fff; font-size: 12px; border-bottom: none;">TK2</th>
+                            <th style="padding: 16px 8px; text-align: center; font-weight: 600; color: #fff; font-size: 12px; border-bottom: none;">TK3</th>
+                            <th style="padding: 16px 8px; text-align: center; font-weight: 600; color: #fff; font-size: 12px; border-bottom: none;">GK</th>
+                            <th style="padding: 16px 8px; text-align: center; font-weight: 600; color: #fff; font-size: 12px; border-bottom: none;">TH1</th>
+                            <th style="padding: 16px 8px; text-align: center; font-weight: 600; color: #fff; font-size: 12px; border-bottom: none;">TH2</th>
+                            <th style="padding: 16px 8px; text-align: center; font-weight: 600; color: #fff; font-size: 12px; border-bottom: none;">TH3</th>
+                            <th style="padding: 16px 8px; text-align: center; font-weight: 600; color: #fff; font-size: 12px; border-bottom: none;">CK</th>
+                            <th style="padding: 16px 12px; text-align: center; font-weight: 600; color: #fff; font-size: 13px; border-bottom: none;">ĐTB</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                 <?php
 				if(isset($_POST['as'])){
 						$ht=$_POST['a'];
@@ -2867,72 +3158,123 @@ if(isset($_REQUEST['qld'])){
 				}
 				$a=1;
 				while($r=mysql_fetch_assoc($q)){
+                    // Calculate DTB
+                    $tc=$r['soTC'];
+                    $tclt=$r['TCLT'];
+                    $tcth=$r['TCTH'];
+                    $tk1=$r['TK1'];
+                    $tk2=$r['TK2'];
+                    $tk3=$r['TK3'];
+                    $gk=$r['GK'];
+                    $th1=$r['TH1'];
+                    $th2=$r['TH2'];
+                    $th3=$r['TH3'];
+                    $ck=$r['CK'];
+                    
+                    if($tk2==""&&$tk3==""){ $tk=$tk1; }
+                    elseif($tk3==""){ $tk=($tk1+$tk2)/2; }
+                    else{ $tk=($tk1+$tk2+$tk3)/3; }
+                    
+                    if($th2==""&&$th3==""){ $th=$th1; }
+                    elseif($th3==""){ $th=($th1+$th2)/2; }
+                    else{ $th=($th1+$th2+$th3)/3; }
+                    
+                    $dtb = '';
+                    if($ck!=""){
+                        $dtbCalc=((($tk*0.2+$gk*0.3+$ck*0.5)*$tclt+$th*$tcth)/$tc);
+                        $dtb = round($dtbCalc,1);
+                    }
+                    
+                    // Determine grade color
+                    $dtbColor = '#6b7280';
+                    $dtbBg = '#f3f4f6';
+                    if($dtb != ''){
+                        if($dtb >= 8.5) { $dtbColor = '#059669'; $dtbBg = '#ecfdf5'; }
+                        elseif($dtb >= 7.0) { $dtbColor = '#2563eb'; $dtbBg = '#eff6ff'; }
+                        elseif($dtb >= 5.0) { $dtbColor = '#d97706'; $dtbBg = '#fffbeb'; }
+                        else { $dtbColor = '#dc2626'; $dtbBg = '#fef2f2'; }
+                    }
 				?>
-                <tr>
-                	<td><?php echo $a++; ?></td>
-                    <td><?php echo $r['masosinhvien'] ?></td>
-                    <td><?php echo $r['tensinhvien'] ?></td>
-                    <td><?php echo $r['TK1'] ?></td>
-                    <td><?php echo $r['TK2'] ?></td>
-                    <td><?php echo $r['TK3'] ?></td>
-                    <td><?php echo $r['GK'] ?></td>
-                    <td><?php echo $r['TH1'] ?></td>
-                    <td><?php echo $r['TH2'] ?></td>
-                    <td><?php echo $r['TH3'] ?></td>
-                    <td><?php echo $r['CK'] ?></td>
-                    <td><?php $tc=$r['soTC'];
-					          $tclt=$r['TCLT'];
-							  $tcth=$r['TCTH'];
-							  $tk1=$r['TK1'];
-							  $tk2=$r['TK2'];
-							  $tk3=$r['TK3'];
-							  $gk=$r['GK'];
-							  $th1=$r['TH1'];
-							  $th2=$r['TH2'];
-							  $th3=$r['TH3'];
-							  $ck=$r['CK'];
-							  if($tk2==""&&$tk3==""){
-								  $tk=$tk1;
-							  }
-							  elseif($tk3==""){
-								  $tk=($tk1+$tk2)/2;
-							  }
-							  else{
-								  $tk=($tk1+$tk2+$tk3)/3;
-							  }
-							  if($th2==""&&$th3==""){
-								  $th=$th1;
-							  }
-							  elseif($th3==""){
-								  $th=($th1+$th2)/2;
-							  }
-							  else{
-								  $th=($th1+$th2+$th3)/3;
-							  }
-							  if($ck==""){
-							  }
-							  else{
-								  $dtb=((($tk*0.2+$gk*0.3+$ck*0.5)*$tclt+$th*$tcth)/$tc);
-								  echo "<center><strong>".round($dtb,1)."</strong></center>";
-							  }?></td>
-                </tr>
+                        <tr style="border-bottom: 1px solid #e5e7eb; transition: all 0.3s ease;" onmouseover="this.style.background='#eef2ff'" onmouseout="this.style.background='#fff'">
+                            <td style="padding: 14px 12px; text-align: center;">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 8px; font-weight: 600; font-size: 12px;">
+                                    <?php echo $a++; ?>
+                                </span>
+                            </td>
+                            <td style="padding: 14px 12px;">
+                                <span style="background: #f3f4f6; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; color: #6b7280; font-family: monospace;">
+                                    <?php echo $r['masosinhvien'] ?>
+                                </span>
+                            </td>
+                            <td style="padding: 14px 12px;">
+                                <span style="font-weight: 600; color: #1a1a2e;"><?php echo $r['tensinhvien'] ?></span>
+                            </td>
+                            <td style="padding: 14px 8px; text-align: center;">
+                                <span style="font-weight: 500; color: #374151;"><?php echo $r['TK1'] ?></span>
+                            </td>
+                            <td style="padding: 14px 8px; text-align: center;">
+                                <span style="font-weight: 500; color: #374151;"><?php echo $r['TK2'] ?></span>
+                            </td>
+                            <td style="padding: 14px 8px; text-align: center;">
+                                <span style="font-weight: 500; color: #374151;"><?php echo $r['TK3'] ?></span>
+                            </td>
+                            <td style="padding: 14px 8px; text-align: center;">
+                                <span style="font-weight: 600; color: #667eea;"><?php echo $r['GK'] ?></span>
+                            </td>
+                            <td style="padding: 14px 8px; text-align: center;">
+                                <span style="font-weight: 500; color: #374151;"><?php echo $r['TH1'] ?></span>
+                            </td>
+                            <td style="padding: 14px 8px; text-align: center;">
+                                <span style="font-weight: 500; color: #374151;"><?php echo $r['TH2'] ?></span>
+                            </td>
+                            <td style="padding: 14px 8px; text-align: center;">
+                                <span style="font-weight: 500; color: #374151;"><?php echo $r['TH3'] ?></span>
+                            </td>
+                            <td style="padding: 14px 8px; text-align: center;">
+                                <span style="font-weight: 700; color: #ef4444;"><?php echo $r['CK'] ?></span>
+                            </td>
+                            <td style="padding: 14px 12px; text-align: center;">
+                                <?php if($dtb != ''){ ?>
+                                <span style="display: inline-block; background: <?php echo $dtbBg; ?>; color: <?php echo $dtbColor; ?>; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 14px;">
+                                    <?php echo $dtb; ?>
+                                </span>
+                                <?php } else { ?>
+                                <span style="color: #9ca3af; font-size: 13px;">Chưa có</span>
+                                <?php } ?>
+                            </td>
+                        </tr>
                 <?php
 				}
-				$a++;
 				?>
-                </thead>
-            </table>
-             <p></p>
-            <center><?php if(isset($_POST['as'])){
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div style="margin-top: 20px; display: flex; justify-content: center;">
+                <?php if(isset($_POST['as'])){
 				}
 				else{
 				include_once("Controller/cPageU.php");
-				}?></center>
-            <br />
-        </div>
-        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1">
+				}?>
+            </div>
         </div>
     </div>
+
+    <style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    input:focus {
+        outline: none;
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    button:hover {
+        transform: translateY(-2px);
+    }
+    </style>
     <?php
 }
 elseif(isset($_REQUEST['bdtk'])){
@@ -3292,56 +3634,186 @@ if ($d1 == "0" && $d2 == "0" && $d3 == "0" && $d4 == "0" && $d5 == "0") {
     <?php
 }
 elseif(isset($_REQUEST['ds'])){
+    date_default_timezone_set('Asia/Ho_Chi_Minh');
 	?>
-    <div class="row">
-        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- ==================== DANH SÁCH SINH VIÊN - MODERN UI ==================== -->
+    <div style="background: #fff; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); overflow: hidden; animation: fadeInUp 0.5s ease;">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px 30px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-users" style="font-size: 24px; color: #fff;"></i>
+            </div>
+            <div>
+                <h3 style="margin: 0; font-size: 20px; font-weight: 600; color: #fff;">Danh Sách Sinh Viên</h3>
+                <p style="margin: 4px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.8);">Theo dõi hoạt động truy cập của sinh viên</p>
+            </div>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 50px; color: #fff; font-size: 14px; font-weight: 500;">
+                    <i class="fas fa-user-graduate"></i>
+                    <?php
+                    $il=$_REQUEST['il'];
+                    $ihp=$_REQUEST['ihp'];
+                    $sql="select * from hocphan hp join ct_hocphan c on hp.id_hocphan=c.id_hocphan
+                    join monlop m on m.id_hocphan=hp.id_hocphan join hoctap h on h.id=m.id
+                    join giangday d on d.id=m.id join sinhvien s on s.id_sinhvien=h.id_sinhvien
+                    join giangvien gv on d.id_giangvien=gv.id_giangvien
+                    where md5(m.id_hocphan)='$ihp' and m.id_lophocphan='$il'";
+                    $qr=mysql_query($sql);
+                    $count = mysql_num_rows($qr);
+                    echo $count . ' sinh viên';
+                    ?>
+                </span>
+            </div>
         </div>
-        <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
-        	<table class="table table-bordered">
-            	<thead>
-                	<tr>
-                    	<th>STT</th>
-                        <th>Họ Và Tên</th>
-                        <th><center>Lần Truy Cập Gần Nhất</center></th>
-                    </tr>
-<?php 
+
+        <!-- Student Table -->
+        <div style="padding: 24px;">
+            <div style="background: #f8fafc; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+                            <th style="padding: 16px 20px; text-align: left; font-weight: 600; color: #374151; font-size: 14px; border-bottom: 2px solid #e5e7eb;">
+                                <i class="fas fa-hashtag" style="color: #667eea; margin-right: 8px;"></i> STT
+                            </th>
+                            <th style="padding: 16px 20px; text-align: left; font-weight: 600; color: #374151; font-size: 14px; border-bottom: 2px solid #e5e7eb;">
+                                <i class="fas fa-user" style="color: #667eea; margin-right: 8px;"></i> Sinh Viên
+                            </th>
+                            <th style="padding: 16px 20px; text-align: center; font-weight: 600; color: #374151; font-size: 14px; border-bottom: 2px solid #e5e7eb;">
+                                <i class="fas fa-id-card" style="color: #667eea; margin-right: 8px;"></i> Mã SV
+                            </th>
+                            <th style="padding: 16px 20px; text-align: center; font-weight: 600; color: #374151; font-size: 14px; border-bottom: 2px solid #e5e7eb;">
+                                <i class="fas fa-circle" style="color: #667eea; margin-right: 8px;"></i> Trạng Thái
+                            </th>
+                            <th style="padding: 16px 20px; text-align: center; font-weight: 600; color: #374151; font-size: 14px; border-bottom: 2px solid #e5e7eb;">
+                                <i class="fas fa-clock" style="color: #667eea; margin-right: 8px;"></i> Truy Cập Gần Nhất
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+<?php
 $il=$_REQUEST['il'];
 $ihp=$_REQUEST['ihp'];
 $sql="select * from hocphan hp join ct_hocphan c on hp.id_hocphan=c.id_hocphan
 join monlop m on m.id_hocphan=hp.id_hocphan join hoctap h on h.id=m.id
 join giangday d on d.id=m.id join sinhvien s on s.id_sinhvien=h.id_sinhvien
 join giangvien gv on d.id_giangvien=gv.id_giangvien
-where md5(m.id_hocphan)='$ihp'
-and m.id_lophocphan='$il'";
+where md5(m.id_hocphan)='$ihp' and m.id_lophocphan='$il'";
 $qr=mysql_query($sql);
-$qr1=mysql_query($sql);
-?>
-<?php
-$a=1;
+$stt = 1;
 while($ttm=mysql_fetch_assoc($qr)){
-	?>
-                    <tr>
-                    	<td><?php echo $a++; ?></td>
-                        <td><?php echo $ttm['tensinhvien'] ?></td>
-                        <td><?php
-						$idsv=$ttm['id_sinhvien'];
-						$il=$ttm['id_lophocphan'];
-						$sql1="select * from thongketruycap where id_sinhvien='$idsv' and id_lophocphan='$il'";
-						$qr1=mysql_query($sql1);
-						$tc=mysql_fetch_assoc($qr1);
-						$tc=strtotime($tc['ngaytruycap']);
-						$ts=strtotime("now");
-						$k= $ts-$tc;
-						$g= $k%60;
-						$p= floor(($k%3600)/60);
-						$h= floor(($k%86400)/3600);
-						$n= floor(($k%2592000)/86400);
-						?><center>Truy cập <strong><?php echo $n."&nbsp;ngày&nbsp;".$h."&nbsp;giờ&nbsp;".$p."&nbsp;phút&nbsp;".$g; ?> giây</strong>&nbsp;trước</center></td>
-                    </tr>
-                    <?php } ?>
-                </thead>
-            </table>
+    $idsv=$ttm['id_sinhvien'];
+    $id_lophocphan=$ttm['id_lophocphan'];
+    
+    $sql1="select * from thongketruycap where id_sinhvien='$idsv' and id_lophocphan='$id_lophocphan'";
+    $qr2=mysql_query($sql1);
+    $tc=mysql_fetch_assoc($qr2);
+    
+    if($tc && isset($tc['ngaytruycap'])){
+        $tcTime = strtotime($tc['ngaytruycap']);
+        $ts = time();
+        $k = $ts - $tcTime;
+        $g = $k % 60;
+        $p = floor(($k % 3600) / 60);
+        $h = floor(($k % 86400) / 3600);
+        $n = floor($k / 86400);
+        
+        if($n == 0 && $h == 0 && $p < 5){
+            $statusClass = 'online';
+            $statusText = 'Đang trực tuyến';
+            $timeText = 'Vừa truy cập';
+            $bgColor = '#ecfdf5';
+            $textColor = '#059669';
+        } elseif($n == 0 && $h < 1){
+            $statusClass = 'active';
+            $statusText = 'Hoạt động';
+            $timeText = $p . ' phút ' . $g . ' giây trước';
+            $bgColor = '#eff6ff';
+            $textColor = '#2563eb';
+        } elseif($n == 0 && $h < 24){
+            $statusClass = 'today';
+            $statusText = 'Hôm nay';
+            $timeText = $h . ' giờ ' . $p . ' phút trước';
+            $bgColor = '#f0fdf4';
+            $textColor = '#16a34a';
+        } elseif($n > 0 && $n < 7){
+            $statusClass = 'away';
+            $statusText = $n . ' ngày trước';
+            $timeText = $h . ' giờ trước';
+            $bgColor = '#fffbeb';
+            $textColor = '#d97706';
+        } else {
+            $statusClass = 'offline';
+            $statusText = 'Lâu không truy cập';
+            $timeText = $n . ' ngày ' . $h . ' giờ trước';
+            $bgColor = '#f3f4f6';
+            $textColor = '#6b7280';
+        }
+    } else {
+        $statusClass = 'never';
+        $statusText = 'Chưa truy cập';
+        $timeText = 'Chưa có dữ liệu';
+        $bgColor = '#fef2f2';
+        $textColor = '#dc2626';
+    }
+    
+    $anhSV = $ttm['anh'];
+    $avatarUrl = '';
+    if(!preg_match("/^[A-Za-z]{1,100}[.(jpg|png)]{3}/", $anhSV)){
+        $avatarUrl = $anhSV;
+    } else {
+        $avatarUrl = 'img/' . $anhSV;
+    }
+?>
+                        <tr style="border-bottom: 1px solid #e5e7eb; transition: all 0.3s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                            <td style="padding: 16px 20px; text-align: center;">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 8px; font-weight: 600; font-size: 14px;">
+                                    <?php echo $stt++; ?>
+                                </span>
+                            </td>
+                            <td style="padding: 16px 20px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="position: relative;">
+                                        <img src="<?php echo $avatarUrl; ?>" alt="<?php echo $ttm['tensinhvien']; ?>" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #e5e7eb;" />
+                                        <span style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: <?php echo $textColor; ?>; border-radius: 50%; border: 2px solid #fff;"></span>
+                                    </div>
+                                    <span style="font-weight: 600; color: #1a1a2e;"><?php echo $ttm['tensinhvien']; ?></span>
+                                </div>
+                            </td>
+                            <td style="padding: 16px 20px; text-align: center;">
+                                <span style="background: #f3f4f6; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #6b7280; font-family: monospace;">
+                                    <?php echo $ttm['masosinhvien']; ?>
+                                </span>
+                            </td>
+                            <td style="padding: 16px 20px; text-align: center;">
+                                <span style="display: inline-flex; align-items: center; gap: 6px; background: <?php echo $bgColor; ?>; color: <?php echo $textColor; ?>; padding: 6px 14px; border-radius: 50px; font-size: 13px; font-weight: 600;">
+                                    <i class="fas fa-circle" style="font-size: 8px;"></i>
+                                    <?php echo $statusText; ?>
+                                </span>
+                            </td>
+                            <td style="padding: 16px 20px; text-align: center;">
+                                <span style="color: #6b7280; font-size: 13px;">
+                                    <i class="fas fa-clock" style="color: #667eea; margin-right: 4px;"></i>
+                                    <?php echo $timeText; ?>
+                                </span>
+                            </td>
+                        </tr>
+<?php } ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
+    </div>
+
+    <style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    </style>
+</div>
         <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1">
         </div>
     </div>
@@ -3837,119 +4309,956 @@ if($n==$ig && !isset($_REQUEST['filenopktth']) && !isset($_REQUEST['filenopth'])
         </div>
     </div>
     
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-            <h5 style="margin:0;"><i class="fas fa-pencil-alt"></i> Bài Tập Lý Thuyết</h5>
+    <!-- ==================== BÀI TẬP LÝ THUYẾT - MODERN UI ==================== -->
+    <div class="assignment-section">
+        <div class="section-header">
+            <div class="header-left">
+                <div class="header-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="header-text">
+                    <h3>Bài Tập Lý Thuyết</h3>
+                    <p>Quản lý bài tập lý thuyết cho sinh viên</p>
+                </div>
+            </div>
             <?php if(!isset($_REQUEST['thembt'])){ ?>
-            <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd&&thembt#bt" class="btn btn-sm btn-light">
-                <i class="fas fa-plus"></i> Thêm
+            <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd&&thembt#bt" class="btn-add-assignment">
+                <i class="fas fa-plus"></i>
+                <span>Thêm Bài Tập</span>
             </a>
             <?php } ?>
         </div>
-        <div class="card-body">
-            <?php if(isset($_REQUEST['thembt'])){ ?>
-            <form action="#" method="post" enctype="multipart/form-data" class="mb-3 p-3 border rounded bg-light">
-                <h6><i class="fas fa-upload"></i> Thêm Bài Tập Mới</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Tiêu Đề:</label>
-                            <input type="text" name="a" class="form-control" placeholder="Nhập Tiêu Đề" required />
-                        </div>
-                        <div class="form-group">
-                            <label>File Bài Tập:</label>
-                            <input type="file" name="f" class="form-control" required />
-                        </div>
+
+        <!-- Form Thêm Bài Tập -->
+        <?php if(isset($_REQUEST['thembt'])){ ?>
+        <div class="assignment-form-wrapper">
+            <div class="form-header">
+                <div class="form-icon">
+                    <i class="fas fa-file-medical"></i>
+                </div>
+                <div>
+                    <h5>Tạo Bài Tập Mới</h5>
+                    <small>Điền thông tin bên dưới để tạo bài tập cho sinh viên</small>
+                </div>
+            </div>
+            <form action="#" method="post" enctype="multipart/form-data" class="assignment-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tag"></i> Tiêu Đề Bài Tập
+                        </label>
+                        <input type="text" name="a" class="form-input" placeholder="Nhập tiêu đề bài tập..." required />
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Hạn Nộp:</label>
-                            <div class="row">
-                                <div class="col-6">
-                                    <label class="small">Bắt đầu:</label>
-                                    <input type="datetime-local" name="bd" class="form-control" required />
-                                </div>
-                                <div class="col-6">
-                                    <label class="small">Kết thúc:</label>
-                                    <input type="datetime-local" name="kt" class="form-control" required />
-                                </div>
-                            </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-cloud-upload-alt"></i> File Đề Bài
+                        </label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" name="f" id="fileInput" class="file-input" required />
+                            <label for="fileInput" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <span class="file-text">Chọn file hoặc kéo thả vào đây</span>
+                                <span class="file-hint">PDF, DOC, DOCX, ZIP (tối đa 10MB)</span>
+                            </label>
+                            <div class="selected-file" id="selectedFile"></div>
                         </div>
                     </div>
                 </div>
+                
+                <div class="form-divider">
+                    <span><i class="fas fa-calendar-alt"></i> Thời Gian Nộp</span>
+                </div>
+                
+                <div class="date-range-wrapper">
+                    <div class="date-input-group">
+                        <label><i class="fas fa-play-circle"></i> Bắt Đầu</label>
+                        <input type="datetime-local" name="bd" class="date-input" required />
+                    </div>
+                    <div class="date-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                    <div class="date-input-group">
+                        <label><i class="fas fa-stop-circle"></i> Kết Thúc</label>
+                        <input type="datetime-local" name="kt" class="date-input" required />
+                    </div>
+                </div>
+                
                 <input type="hidden" name="il" value="<?php echo $c['id_lophocphan']; ?>" />
-                <button type="submit" name="addbt" class="btn btn-primary"><i class="fas fa-check"></i> Thêm Bài Tập</button>
-                <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd#bt" class="btn btn-secondary"><i class="fas fa-times"></i> Hủy</a>
+                
+                <div class="form-actions">
+                    <button type="submit" name="addbt" class="btn-submit">
+                        <i class="fas fa-check"></i> Tạo Bài Tập
+                    </button>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd#bt" class="btn-cancel">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
             </form>
-            <?php } ?>
-            <div class="table-responsive">
-                <table class="table table-hover table-bordered">
-                    <thead class="thead-light">
-                        <tr>
-                            <th width="50">STT</th>
-                            <th>Tiêu Đề</th>
-                            <th width="150">Hạn Nộp</th>
-                            <th width="120">Ngày Tạo</th>
-                            <th width="150">Hành Động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    <?php
-                    $sql="select *from baitaplythuyet lt join giangday gd on lt.id_giangday=gd.id_giangday
-                    join monlop m on m.id=gd.id
-                    where gd.id_giangvien='$ig' and md5(m.id_hocphan)='$ihp' and m.id_lophocphan='$il' ";
-                    $qr=mysql_query($sql);
-                    $stt = 1;
-                    while($tl=mysql_fetch_assoc($qr)){
-                    ?>
-                        <tr>
-                            <td><?php echo $stt++; ?></td>
-                            <td>
-                                <a href="taixuong.php?fu=<?php echo $tl['filebt'];?>">
-                                    <i class="fas fa-file-alt text-primary"></i> <?php echo $tl['tieude']; ?>
-                                </a>
-                            </td>
-                            <td><?php echo date('d/m/Y H:i', strtotime($tl['ketthucnop'])); ?></td>
-                            <td><?php echo date('d/m/Y', strtotime($tl['ngaydang'])); ?></td>
-                            <td>
-                                <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&id=<?php echo $tl['id_btlt']; ?>&&suabt&&gd#bt" class="btn btn-sm btn-outline-primary" title="Sửa"><i class="fas fa-edit"></i></a>
-                                <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&id=<?php echo $tl['id_btlt']; ?>&&xoabt&&gd#bt" class="btn btn-sm btn-outline-danger" title="Xóa" onclick="return confirm('Bạn có chắc muốn xóa?')"><i class="fas fa-trash"></i></a>
-                                <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&id=<?php echo $tl['id_btlt']; ?>&&filenop&&gd#bt" class="btn btn-sm btn-outline-info" title="File nộp"><i class="fas fa-download"></i></a>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
+        </div>
+        <?php } ?>
+
+        <!-- Danh Sách Bài Tập -->
+        <div class="assignment-list">
+            <?php
+            $sql="select *from baitaplythuyet lt join giangday gd on lt.id_giangday=gd.id_giangday
+            join monlop m on m.id=gd.id
+            where gd.id_giangvien='$ig' and md5(m.id_hocphan)='$ihp' and m.id_lophocphan='$il' ORDER BY lt.ngaydang DESC";
+            $qr=mysql_query($sql);
+            $stt = 1;
+            $hasData = false;
+            while($tl=mysql_fetch_assoc($qr)){
+                $hasData = true;
+                // Lấy thời gian hiện tại với timezone Việt Nam
+                date_default_timezone_set('Asia/Ho_Chi_Minh');
+                $now = time();
+                // Chuyển đổi thời gian deadline từ database sang timestamp
+                $deadlineStr = $tl['ketthucnop'];
+                $deadline = strtotime($deadlineStr);
+                
+                // So sánh chính xác
+                $isExpired = $now > $deadline;
+                $remaining = $deadline - $now;
+                
+                // Tính toán thời gian còn lại chi tiết
+                $daysRemaining = floor($remaining / (60*60*24));
+                $hoursRemaining = floor(($remaining % (60*60*24)) / (60*60));
+                $minutesRemaining = floor(($remaining % (60*60)) / 60);
+                
+                // Xác định trạng thái deadline
+                $deadlineStatus = 'active';
+                $deadlineText = '';
+                
+                if($isExpired){
+                    $deadlineStatus = 'expired';
+                    $deadlineText = 'Đã hết hạn';
+                } else {
+                    if($daysRemaining > 0){
+                        $deadlineText = 'Còn ' . $daysRemaining . ' ngày';
+                    } elseif($hoursRemaining > 0){
+                        $deadlineText = 'Còn ' . $hoursRemaining . ' giờ';
+                    } elseif($minutesRemaining > 0){
+                        $deadlineText = 'Còn ' . $minutesRemaining . ' phút';
+                    } else {
+                        $deadlineText = 'Sắp đến hạn!';
+                    }
+                }
+                
+                $fileExt = strtolower(pathinfo($tl['filebt'], PATHINFO_EXTENSION));
+                $fileIcon = 'fa-file';
+                if($fileExt == 'pdf') $fileIcon = 'fa-file-pdf';
+                elseif($fileExt == 'doc' || $fileExt == 'docx') $fileIcon = 'fa-file-word';
+                elseif($fileExt == 'zip' || $fileExt == 'rar') $fileIcon = 'fa-file-archive';
+            ?>
+            <div class="assignment-card <?php echo $deadlineStatus; ?>">
+                <div class="assignment-card-left">
+                    <div class="assignment-number"><?php echo $stt++; ?></div>
+                </div>
+                <div class="assignment-card-main">
+                    <div class="assignment-info">
+                        <div class="assignment-title">
+                            <i class="fas <?php echo $fileIcon; ?> file-type-icon"></i>
+                            <a href="taixuong.php?fu=<?php echo $tl['filebt'];?>" class="assignment-name">
+                                <?php echo $tl['tieude']; ?>
+                            </a>
+                        </div>
+                        <div class="assignment-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-calendar-plus"></i>
+                                <?php echo date('d/m/Y H:i', strtotime($tl['ngaydang'])); ?>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="assignment-deadline">
+                        <?php if($deadlineStatus == 'expired'){ ?>
+                            <span class="deadline-badge expired">
+                                <i class="fas fa-clock"></i>
+                                <?php echo $deadlineText; ?>
+                            </span>
+                        <?php } else { ?>
+                            <span class="deadline-badge active">
+                                <i class="fas fa-clock"></i>
+                                <?php echo $deadlineText; ?>
+                            </span>
+                        <?php } ?>
+                        <div class="deadline-date">
+                            <i class="fas fa-calendar"></i>
+                            <?php echo date('d/m/Y H:i', $deadline); ?>
+                        </div>
+                    </div>
+                    <div class="assignment-actions">
+                        <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&id=<?php echo $tl['id_btlt']; ?>&&suabt&&gd#bt" class="action-btn edit" title="Sửa">
+                            <i class="fas fa-pen"></i>
+                        </a>
+                        <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&id=<?php echo $tl['id_btlt']; ?>&&filenop&&gd#bt" class="action-btn download" title="DS Nộp">
+                            <i class="fas fa-users"></i>
+                        </a>
+                        <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&id=<?php echo $tl['id_btlt']; ?>&&xoabt&&gd#bt" class="action-btn delete" title="Xóa" onclick="return confirm('Bạn có chắc muốn xóa bài tập này?');">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
+            <?php } ?>
+            
+            <?php if(!$hasData){ ?>
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-folder-open"></i>
+                </div>
+                <h4>Chưa có bài tập lý thuyết</h4>
+                <p>Click nút "Thêm Bài Tập" để tạo bài tập mới cho sinh viên</p>
+            </div>
+            <?php } ?>
         </div>
     </div>
 </div>
 
 <style>
-.document-item {
-    background: #f8f9fa;
-    transition: all 0.3s;
+/* ==================== BÀI TẬP LÝ THUYẾT - STYLES ==================== */
+.assignment-section {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    overflow: hidden;
+    animation: fadeInUp 0.5s ease;
 }
-.document-item:hover {
-    background: #e9ecef;
+
+/* Section Header */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+}
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.header-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+.header-text h3 {
+    margin: 0 0 4px 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+.header-text p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.8;
+}
+.btn-add-assignment {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    color: #667eea;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+.btn-add-assignment:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    color: #667eea;
+    text-decoration: none;
+}
+
+/* Form Wrapper */
+.assignment-form-wrapper {
+    padding: 30px;
+    background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+    border-bottom: 1px solid #eef2f7;
+}
+.form-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.form-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+}
+.form-header h5 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    color: #1a1a2e;
+}
+.form-header small {
+    color: #6b7280;
+}
+
+/* Form Grid */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 10px;
+}
+.form-label i {
+    color: #667eea;
+}
+.form-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+.form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+/* File Upload */
+.file-upload-wrapper {
+    position: relative;
+}
+.file-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.file-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+.file-upload-label:hover {
+    border-color: #667eea;
+    background: #f8fafc;
+}
+.upload-icon {
+    font-size: 36px;
+    color: #667eea;
+    margin-bottom: 12px;
+}
+.file-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+}
+.file-hint {
+    font-size: 12px;
+    color: #9ca3af;
+}
+.selected-file {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: #ecfdf5;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #059669;
+    display: none;
+}
+.selected-file.show {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Form Divider */
+.form-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+}
+.form-divider::before,
+.form-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+}
+.form-divider span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    white-space: nowrap;
+}
+.form-divider i {
+    color: #667eea;
+}
+
+/* Date Range */
+.date-range-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.date-input-group {
+    flex: 1;
+}
+.date-input-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+.date-input-group label i {
+    color: #667eea;
+}
+.date-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+.date-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+.date-arrow {
+    color: #9ca3af;
+    font-size: 18px;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 16px;
+    padding-top: 10px;
+}
+.btn-submit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 14px 32px;
+    border: none;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+.btn-submit:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+}
+.btn-cancel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f3f4f6;
+    color: #6b7280;
+    padding: 14px 28px;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+.btn-cancel:hover {
+    background: #e5e7eb;
+    color: #374151;
+    text-decoration: none;
+}
+
+/* Assignment List */
+.assignment-list {
+    padding: 24px;
+}
+.assignment-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+.assignment-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
     transform: translateX(5px);
 }
-.card {
+.assignment-card.expired {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+}
+.assignment-card.expired:hover {
+    border-color: #9ca3af;
+    box-shadow: none;
+}
+.assignment-card-left {
+    flex-shrink: 0;
+}
+.assignment-number {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+}
+.assignment-card-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+.assignment-info {
+    flex: 1;
+}
+.assignment-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+.file-type-icon {
+    font-size: 24px;
+    color: #ef4444;
+}
+.assignment-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a2e;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+.assignment-name:hover {
+    color: #667eea;
+}
+.assignment-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #9ca3af;
+}
+.meta-item i {
+    color: #667eea;
+}
+.assignment-deadline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 0 20px;
+    border-left: 1px solid #e5e7eb;
+}
+.deadline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.deadline-badge.active {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: #fff;
+}
+.deadline-badge.expired {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+.deadline-date {
+    font-size: 12px;
+    color: #9ca3af;
+}
+.deadline-date i {
+    margin-right: 4px;
+}
+.assignment-actions {
+    display: flex;
+    gap: 10px;
+}
+.action-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+.action-btn.edit {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+.action-btn.edit:hover {
+    background: #3b82f6;
+    color: #fff;
+    transform: scale(1.1);
+}
+.action-btn.download {
+    background: #ecfdf5;
+    color: #10b981;
+}
+.action-btn.download:hover {
+    background: #10b981;
+    color: #fff;
+    transform: scale(1.1);
+}
+.action-btn.delete {
+    background: #fef2f2;
+    color: #ef4444;
+}
+.action-btn.delete:hover {
+    background: #ef4444;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+.empty-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+.empty-icon i {
+    font-size: 32px;
+    color: #9ca3af;
+}
+.empty-state h4 {
+    font-size: 18px;
+    color: #374151;
+    margin-bottom: 8px;
+}
+.empty-state p {
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .assignment-card-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .assignment-deadline {
+        border-left: none;
+        padding: 0;
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+    .header-left {
+        flex-direction: column;
+    }
+    .assignment-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    .assignment-card-left {
+        order: -1;
+    }
+    .form-actions {
+        flex-direction: column;
+    }
+    .date-range-wrapper {
+        flex-direction: column;
+    }
+    .date-arrow {
+        transform: rotate(90deg);
+    }
+}
+</style>
+
+<script>
+// File upload display
+document.getElementById('fileInput')?.addEventListener('change', function(e) {
+    const fileName = e.target.files[0]?.name || '';
+    const fileExt = fileName.split('.').pop().toLowerCase();
+    let icon = 'fa-file';
+    if(fileExt === 'pdf') icon = 'fa-file-pdf';
+    else if(fileExt === 'doc' || fileExt === 'docx') icon = 'fa-file-word';
+    else if(fileExt === 'zip' || fileExt === 'rar') icon = 'fa-file-archive';
+    
+    const selectedFile = document.getElementById('selectedFile');
+    if(fileName) {
+        selectedFile.innerHTML = `<i class="fas ${icon}"></i> <strong>${fileName}</strong>`;
+        selectedFile.classList.add('show');
+    } else {
+        selectedFile.classList.remove('show');
+    }
+});
+</script>
+
+<style>
+/* === Modern Global Styles === */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+/* === Animations === */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Card Modern Styles === */
+.card {
+    border-radius: 16px;
     overflow: hidden;
+    transition: all 0.3s ease;
+    animation: fadeIn 0.5s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15) !important;
 }
 .card-header {
-    padding: 12px 20px;
+    padding: 16px 24px;
 }
-/* CSS Phần Thực Hành */
+
+/* === Button Styles === */
+.btn-modern, .btn-shadow {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+.btn-modern:hover, .btn-shadow:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    color: white;
+}
+.btn-success.btn-shadow {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+}
+.btn-success.btn-shadow:hover {
+    box-shadow: 0 8px 25px rgba(17, 153, 142, 0.5);
+}
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+    transform: translateY(-2px);
+}
+.btn-action {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+.btn-action:hover {
+    transform: scale(1.15);
+}
+
+/* === Gradient Headers === */
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+.bg-gradient-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+}
+.bg-gradient-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+}
+
+/* === Table Modern === */
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+.table thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+.table tbody tr:hover {
+    background-color: rgba(102, 126, 234, 0.08) !important;
+    transform: scale(1.01);
+}
+
+/* === Document Item === */
+.document-item {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: all 0.3s ease;
+    border-radius: 10px;
+}
+.document-item:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    transform: translateX(8px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* === Badge Styles === */
+.badge-pill {
+    padding: 6px 14px;
+    font-weight: 500;
+}
+
+/* === Form Styles === */
+.form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+.form-control-lg {
+    border-radius: 12px;
+}
+.form-add-wrapper {
+    border: 2px dashed #dee2e6;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+.custom-file-label {
+    border-radius: 10px;
+}
+
+/* === Links === */
+a {
+    color: #667eea;
+    transition: color 0.3s ease;
+}
+a:hover {
+    color: #764ba2;
+    text-decoration: none;
+}
+/* === CSS Phần Thực Hành - Modern Style === */
 .practice-section {
     padding: 20px 30px;
-    background: #f8f9fa;
-    border-radius: 10px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 16px;
     margin-bottom: 20px;
+    animation: fadeIn 0.5s ease;
 }
 .practice-header {
-    color: #F63;
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     font-size: 25px;
     font-weight: bold;
     margin-bottom: 20px;
@@ -3958,17 +5267,24 @@ if($n==$ig && !isset($_REQUEST['filenopktth']) && !isset($_REQUEST['filenopth'])
     gap: 10px;
 }
 .practice-header i {
-    color: #F63;
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 .practice-card {
     background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 16px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
     margin-bottom: 20px;
     overflow: hidden;
+    transition: all 0.3s ease;
+}
+.practice-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
 }
 .practice-card-header {
-    background: #F63;
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
     color: #fff;
     padding: 15px 20px;
     font-size: 18px;
@@ -3978,11 +5294,12 @@ if($n==$ig && !isset($_REQUEST['filenopktth']) && !isset($_REQUEST['filenopth'])
     padding: 20px;
 }
 .practice-info {
-    background: #fff3e0;
-    border-left: 4px solid #F63;
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    border-left: 4px solid;
+    border-image: linear-gradient(to bottom, #f5576c, #f093fb) 1;
     padding: 15px;
     margin-bottom: 20px;
-    border-radius: 5px;
+    border-radius: 8px;
 }
 .practice-info-item {
     font-size: 16px;
@@ -4001,19 +5318,20 @@ if($n==$ig && !isset($_REQUEST['filenopktth']) && !isset($_REQUEST['filenopth'])
     margin: 0;
 }
 .practice-doc-item {
-    background: #f8f9fa;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 12px 15px;
     margin-bottom: 10px;
-    border-radius: 8px;
+    border-radius: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     border: 1px solid #e9ecef;
 }
 .practice-doc-item:hover {
-    background: #e9ecef;
-    transform: translateX(5px);
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    transform: translateX(8px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 .practice-doc-link {
     display: flex;
@@ -4023,7 +5341,7 @@ if($n==$ig && !isset($_REQUEST['filenopktth']) && !isset($_REQUEST['filenopth'])
     text-decoration: none;
 }
 .practice-doc-link:hover {
-    color: #F63;
+    color: #f5576c;
 }
 .practice-doc-actions {
     display: flex;
@@ -4035,49 +5353,57 @@ if($n==$ig && !isset($_REQUEST['filenopktth']) && !isset($_REQUEST['filenopth'])
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 5px;
-    transition: all 0.3s;
+    border-radius: 8px;
+    transition: all 0.3s ease;
 }
 .practice-doc-actions a:hover {
-    transform: scale(1.1);
+    transform: scale(1.15);
 }
 .practice-add-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: #F63;
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
     color: #fff;
     padding: 10px 20px;
-    border-radius: 8px;
+    border-radius: 25px;
     text-decoration: none;
     font-size: 14px;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
 }
 .practice-add-btn:hover {
-    background: #e55a00;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(245, 87, 108, 0.5);
     color: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(255,102,51,0.3);
 }
 .practice-form-card {
     background: #fff;
-    border-radius: 10px;
+    border-radius: 16px;
     padding: 25px;
     margin-top: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    border: 2px dashed #F63;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    border: 2px dashed;
+    border-image: linear-gradient(to right, #f5576c, #f093fb) 1;
+    animation: slideDown 0.4s ease-out;
 }
 .practice-form-title {
-    color: #F63;
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 20px;
 }
 .practice-empty {
     text-align: center;
-    padding: 20px;
+    padding: 30px;
     color: #999;
-    font-style: italic;
+}
+.practice-empty i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
 }
 </style>
 <?php
@@ -4321,39 +5647,93 @@ elseif($n==$ig||$m==$ig){
 <?php } }
 ?>
 
-<br />
-<div class="row">
-<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 border" style="background-color:#fff">
-     <div class="row">
-     	<div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
-        <br />
-       <img src="./img/jahja.jpg" height="75px" width="100px" />
-        <p></p>
-        <p>Chào Mừng Các Bạn Đến Với Hệ Thống ...</p>
-        <br />
+<!-- ==================== MODERN FOOTER ==================== -->
+<div class="modern-footer">
+    <div class="footer-main">
+        <div class="footer-grid">
+            <!-- Brand Column -->
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <img src="./img/jahja.jpg" alt="Logo" />
+                    <h3>QLHV System</h3>
+                </div>
+                <p>Hệ thống Quản lý Học vụ - Trường Cao Đẳng Sư Phạm. Quản lý hiệu quả, minh bạch và chuyên nghiệp.</p>
+                <div class="footer-social">
+                    <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="footer-section">
+                <h4>Liên Kết Nhanh</h4>
+                <ul class="footer-links">
+                    <li><a href="homeGV.php?bm=<?php echo $_REQUEST['bm']; ?>"><i class="fas fa-chevron-right"></i> Trang Chủ</a></li>
+                    <li><a href="info1.php?bm=<?php echo $_REQUEST['bm']; ?>"><i class="fas fa-chevron-right"></i> Thông Tin Cá Nhân</a></li>
+                    <li><a href="#"><i class="fas fa-chevron-right"></i> Hướng Dẫn Sử Dụng</a></li>
+                    <li><a href="#"><i class="fas fa-chevron-right"></i> Chính Sách Bảo Mật</a></li>
+                </ul>
+            </div>
+
+            <!-- Contact -->
+            <div class="footer-section">
+                <h4>Liên Hệ</h4>
+                <div class="footer-contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="contact-text">
+                        <strong>Địa Chỉ</strong>
+                        <span>123 Đường ABC, Quận XYZ, TP.HCM</span>
+                    </div>
+                </div>
+                <div class="footer-contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-phone-alt"></i>
+                    </div>
+                    <div class="contact-text">
+                        <strong>Điện Thoại</strong>
+                        <span>0143.234.563 - ext 808</span>
+                    </div>
+                </div>
+                <div class="footer-contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="contact-text">
+                        <strong>Email</strong>
+                        <span>csm@gmail.com</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
-        <p></p>
-        <h5>Liên Kết</h5>
-        <p></p>
-        - Link Liên Kết 1<p></p>
-        - Link Liên Kết 2<p></p>
-        - ...
+    </div>
+
+    <!-- Footer Bottom -->
+    <div class="footer-bottom">
+        <p>&copy; 2026 QLHV System - Trường Cao Đẳng Sư Phạm. All rights reserved.</p>
+        <div class="footer-bottom-links">
+            <a href="#">Điều Khoản</a>
+            <a href="#">Bảo Mật</a>
+            <a href="#">Hỗ Trợ</a>
         </div>
-        <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
-        <p></p>
-        <h5>Liên Hệ</h5>
-        <p></p>
-        Trung Tâm Quản Trị Hệ Thống - Trường ...
-        <p></p>
-        <img src="https://tse4.mm.bing.net/th?id=OIP.VMPvKsUQ9Q91rlEDRqsj8AHaHa&pid=Api&P=0&h=180" height="30px" width="30px" /> &nbsp; Phone :&nbsp;0143.234.563<p></p>
-         <img src="https://tse3.mm.bing.net/th?id=OIP.Ye2A24tF7KlssZxi_cffWwHaGD&pid=Api&P=0&h=180" height="30px" width="30px" /> &nbsp; Email :&nbsp;abc@gmail.com
-        
-        </div>
-     </div>
-</div>
+    </div>
 </div>
 
 </div>
+
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    document.getElementById('currentTime').textContent = now.toLocaleDateString('vi-VN', options);
+}
+updateTime();
+setInterval(updateTime, 1000);
+</script>
+
 </body>
 </html>
