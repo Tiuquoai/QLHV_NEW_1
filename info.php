@@ -46,6 +46,7 @@ if($k != $mk || $m != $ma){
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Thông Tin Sinh Viên</title>
 <link rel="icon" type="image/png" href="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180"/>
+<link rel="shortcut icon" href="./img/jahja (1).ico" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="css/lms-modern.css"/>
 <style>
 	a { color: #667eea; transition: all 0.3s ease; text-decoration: none; }

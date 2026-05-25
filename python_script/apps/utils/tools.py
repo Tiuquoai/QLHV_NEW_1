@@ -99,9 +99,9 @@ class tools_func:
                     "lop": row["lopCN"],
                     "cosodaotao": row["cosodaotao"],
                     "trangthai": trangthai_map.get(row["trangthai"], f"Trạng thái {row['trangthai']}"),
-                    "username": row["username"],
+                    "username": row["tenuser"],
                     "email": row["email"],
-                    "trangthai_taikhoan": row["trangthai_taikhoan"],
+                    "trangthai_taikhoan": row["trangthai"],
                 })
 
             if not sinhvien_list:
