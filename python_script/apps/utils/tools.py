@@ -52,8 +52,71 @@ class tools_func:
             return {"message": "Gửi email thất bại", "error": str(e)}
         
         
-    
+    @tool
+    async def all_sinhvien(ten: str = "") -> dict:
+        """
+        Liệt kê toàn bộ sinh viên có trong hệ thống.
+        Tìm kiếm theo tên sinh viên (dùng REGEX, không phân biệt hoa thường).
+        Trả về danh sách gồm: id, tên, mã sinh viên, giới tính, ngày sinh, SĐT,
+        khoa, lớp, cơ sở đào tạo, trạng thái và thông tin tài khoản.
+        """
+        try:
+            from apps.config import conn_mysql
 
+            cursor = conn_mysql.cursor(dictionary=True)
+
+            query = """
+                SELECT
+                    *
+                FROM sinhvien sv
+                JOIN `user` u ON sv.user_id = u.user_id
+                WHERE 1=1
+            """
+            params = []
+
+            if ten:
+                query += " AND sv.tensinhvien REGEXP %s"
+                params.append(ten)
+
+            query += " ORDER BY sv.id_sinhvien DESC"
+
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            cursor.close()
+
+            trangthai_map = {0: "Khóa", 1: "Hoạt động", 2: "Bảo lưu"}
+            sinhvien_list = []
+            for row in rows:
+                sinhvien_list.append({
+                    "id": row["id_sinhvien"],
+                    "user_id": row["user_id"],
+                    "tensinhvien": row["tensinhvien"],
+                    "masosinhvien": row["masosinhvien"],
+                    "gioitinh": row["gioitinh"],
+                    "ngaysinh": row["ngaysinh"],
+                    "sdt": row["sdt"],
+                    "khoa": row["khoa"],
+                    "lop": row["lopCN"],
+                    "cosodaotao": row["cosodaotao"],
+                    "trangthai": trangthai_map.get(row["trangthai"], f"Trạng thái {row['trangthai']}"),
+                    "username": row["username"],
+                    "email": row["email"],
+                    "trangthai_taikhoan": row["trangthai_taikhoan"],
+                })
+
+            if not sinhvien_list:
+                return {"message": "Không tìm thấy sinh viên nào.", "sinhviens": []}
+
+            return {
+                "message": f"Tìm thấy {len(sinhvien_list)} sinh viên.",
+                "total": len(sinhvien_list),
+                "sinhviens": sinhvien_list,
+            }
+
+        except Exception as e:
+            print(f"[all_sinhvien] Lỗi truy vấn MySQL: {e}")
+            return {"message": "Không thể truy vấn danh sách sinh viên.", "error": str(e)}
+        
     # @tool
     # async def all_expert() -> dict:
     #     """
