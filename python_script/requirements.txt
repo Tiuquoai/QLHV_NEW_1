@@ -16,3 +16,4 @@ motor
 pymongo 
 openpyxl
 pandas
+mysql-connector-python

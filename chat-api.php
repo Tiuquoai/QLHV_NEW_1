@@ -31,7 +31,7 @@ try {
     $kn = $p->ketnoi($ketnoi);
     
     // Get user role from session
-    $tmp = "admin"; // Default to admin if session not set
+    $tmp = "hocsinh"; // Default to admin if session not set
     
     if (isset($_SESSION['ma']) && isset($_SESSION['mk'])) {
         $mauser = $_SESSION['ma'];
@@ -61,7 +61,7 @@ try {
     
     $prompt = isset($data['prompt']) && trim($data['prompt']) !== ''
         ? trim($data['prompt'])
-        : "Xin chào, bạn là ai?";
+        : "Nhập môn lập trình học cái gì vậy tôi sợ quá";
     
     // =====================
     // ADMIN FLOW - Dùng /chat-ai endpoint
@@ -148,11 +148,16 @@ try {
         exit;
     }
     
+
+
     $rs = json_decode($response1, true);
     $vector_data = $rs['vector'];
     
+//     var_dump($vector_data);
+// exit;
+
     // Bước 2: Search trong Qdrant
-    $urlQdrant = "http://localhost:6333/collections/ilo_jobs/points/search";
+    $urlQdrant = "http://localhost:6333/collections/iuh_subjects/points/search";
     
     $dataQdrant = array(
         "vector" => $vector_data,
