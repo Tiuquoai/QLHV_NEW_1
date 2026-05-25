@@ -1,57 +1,139 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Quản Lý Học Vụ</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<style>
+.pagination-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 0;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 10px;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.pagination-btn:hover {
+    background: #e5e7eb;
+    color: #374151;
+    transform: translateY(-2px);
+}
+
+.pagination-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    font-weight: 600;
+}
+
+.pagination-btn.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.pagination-btn.nav {
+    background: #fff;
+    border: 2px solid #e5e7eb;
+}
+
+.pagination-btn.nav:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.pagination-btn.nav i {
+    font-size: 12px;
+}
+
+.pagination-ellipsis {
+    color: #9ca3af;
+    font-size: 14px;
+    padding: 0 8px;
+}
+
+.pagination-info {
+    margin-left: 16px;
+    font-size: 13px;
+    color: #9ca3af;
+}
+</style>
 </head>
-
 <body>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Quản Lý Học Vụ</title>
-</head>
 
-<body>
-<?php
-
-if ($tranghientai>2){
-	$trangdau=1;
-    		echo '<button class="b1"><a href="cthpgv.php?bm='.$_REQUEST['bm'].'&&ig='.$_REQUEST['ig'].'&&ihp='.$_REQUEST['ihp'].'&&il='.$_REQUEST['il'].'&&'.'qld&&page='.$trangdau.'">First</a></button> ';
-}
-if ($tranghientai > 2 && $tongsotrang > 2){
-    		echo '<button class="b1"><a href="cthpgv.php?bm='.$_REQUEST['bm'].'&&ig='.$_REQUEST['ig'].'&&ihp='.$_REQUEST['ihp'].'&&il='.$_REQUEST['il'].'&&'.'qld&&page='.($tranghientai-2).'"><<</a></button>  ';
-}
-
-if ($tranghientai > 1 && $tongsotrang > 1){
-   			 echo '<button class="b1"><a href="cthpgv.php?bm='.$_REQUEST['bm'].'&&ig='.$_REQUEST['ig'].'&&ihp='.$_REQUEST['ihp'].'&&il='.$_REQUEST['il'].'&&'.'qld&&page='.($tranghientai-1).'"><</a></button>  ';
-}
- 
-for ($i = 1; $i <= $tongsotrang; $i++){
-    if ($i == $tranghientai){
-			 echo '<button class="b2"><a href="cthpgv.php?bm='.$_REQUEST['bm'].'&&ig='.$_REQUEST['ig'].'&&ihp='.$_REQUEST['ihp'].'&&il='.$_REQUEST['il'].'&&'.'qld&&page='.$i.'">'.'<cl>'.$i.'</cl>'."&nbsp;".'</a></button> ';
+<div class="pagination-wrapper">
+    <?php
+    
+    $baseUrl = "cthpgv.php?bm=".$_REQUEST['bm']."&&ig=".$_REQUEST['ig']."&&ihp=".$_REQUEST['ihp']."&&il=".$_REQUEST['il']."&&qld";
+    
+    // Nút First và Previous
+    if ($tranghientai > 2){
+        echo '<a href="'.$baseUrl.'&&page=1" class="pagination-btn nav" title="Trang đầu"><i class="fas fa-angle-double-left"></i></a>';
     }
-    elseif($i>$tranghientai-3&&$i<$tranghientai+3){
-       		 echo '<button class="b1"><a href="cthpgv.php?bm='.$_REQUEST['bm'].'&&ig='.$_REQUEST['ig'].'&&ihp='.$_REQUEST['ihp'].'&&il='.$_REQUEST['il'].'&&'.'qld&&page='.$i.'">'.$i."&nbsp;".'</a></button> ';
+    
+    if ($tranghientai > 1){
+        echo '<a href="'.$baseUrl.'&&page='.($tranghientai-1).'" class="pagination-btn nav" title="Trang trước"><i class="fas fa-chevron-left"></i></a>';
     }
-}
- 
-if ($tranghientai< $tongsotrang && $tongsotrang > 1){
-   			 echo '<button class="b1"><a href="cthpgv.php?bm='.$_REQUEST['bm'].'&&ig='.$_REQUEST['ig'].'&&ihp='.$_REQUEST['ihp'].'&&il='.$_REQUEST['il'].'&&'.'qld&&page='.($tranghientai+1).'">></a></button>  ';
-}
-if ($tranghientai< $tongsotrang && $tongsotrang > 2){
-   			 echo '<button class="b1"><a href="cthpgv.php?bm='.$_REQUEST['bm'].'&&ig='.$_REQUEST['ig'].'&&ihp='.$_REQUEST['ihp'].'&&il='.$_REQUEST['il'].'&&'.'qld&&page='.($tranghientai+2).'">>></a></button>  ';
-}	
-if ($tranghientai < $tongsotrang - 3){
-			 $trangcuoi=$tongsotrang;
-   			 echo '<button class="b1"><a href="cthpgv.php?bm='.$_REQUEST['bm'].'&&ig='.$_REQUEST['ig'].'&&ihp='.$_REQUEST['ihp'].'&&il='.$_REQUEST['il'].'&&'.'qld&&page='.$trangcuoi.'">Last</a></button> ';
-}
-	
-
-
-
-?>
+    
+    // Hiển thị số trang
+    $start = max(1, $tranghientai - 2);
+    $end = min($tongsotrang, $tranghientai + 2);
+    
+    // Thêm dấu ... nếu cần
+    if ($start > 1) {
+        echo '<a href="'.$baseUrl.'&&page=1" class="pagination-btn">1</a>';
+        if ($start > 2) {
+            echo '<span class="pagination-ellipsis">...</span>';
+        }
+    }
+    
+    for ($i = $start; $i <= $end; $i++){
+        if ($i == $tranghientai){
+            echo '<a href="'.$baseUrl.'&&page='.$i.'" class="pagination-btn active">'.$i.'</a>';
+        }
+        else{
+            echo '<a href="'.$baseUrl.'&&page='.$i.'" class="pagination-btn">'.$i.'</a>';
+        }
+    }
+    
+    // Thêm dấu ... nếu cần
+    if ($end < $tongsotrang) {
+        if ($end < $tongsotrang - 1) {
+            echo '<span class="pagination-ellipsis">...</span>';
+        }
+        echo '<a href="'.$baseUrl.'&&page='.$tongsotrang.'" class="pagination-btn">'.$tongsotrang.'</a>';
+    }
+    
+    // Nút Next và Last
+    if ($tranghientai < $tongsotrang){
+        echo '<a href="'.$baseUrl.'&&page='.($tranghientai+1).'" class="pagination-btn nav" title="Trang sau"><i class="fas fa-chevron-right"></i></a>';
+    }
+    
+    if ($tranghientai < $tongsotrang - 1){
+        echo '<a href="'.$baseUrl.'&&page='.$tongsotrang.'" class="pagination-btn nav" title="Trang cuối"><i class="fas fa-angle-double-right"></i></a>';
+    }
+    
+    // Thông tin phân trang
+    echo '<span class="pagination-info">Trang '.$tranghientai.' / '.$tongsotrang.'</span>';
+    ?>
+</div>
 
 </body>
 </html>
