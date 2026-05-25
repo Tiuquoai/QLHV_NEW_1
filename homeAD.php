@@ -11,6 +11,7 @@ session_start();
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Home AD Hệ Thống</title>
 <link rel="icon" type="image/png" href="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180"/>
+<link rel="shortcut icon" href="./img/jahja (1).ico" type="image/x-icon">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -356,8 +357,8 @@ body {
     position: fixed;
     bottom: 0;
     right: 24px;
-    width: 420px;
-    max-height: 600px;
+    width: 720px;
+    max-height: 700px;
     background: #fff;
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
@@ -463,6 +464,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
+
 }
 
 .chat-message {
@@ -470,6 +472,7 @@ body {
     gap: 12px;
     max-width: 85%;
     animation: slideIn 0.3s ease;
+    /* width: 500px; */
 }
 
 @keyframes slideIn {
@@ -626,6 +629,124 @@ body {
 
 .send-btn:active {
     transform: scale(0.95);
+}
+
+/* ===================== STUDENT TABLE IN CHAT ===================== */
+.chat-sv-table-wrapper {
+    margin-top: 14px;
+    border-radius: 14px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 420px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.chat-sv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.chat-sv-table thead tr {
+    background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+    color: #fff;
+}
+
+.chat-sv-table th {
+    padding: 9px 10px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 11.5px;
+    letter-spacing: 0.3px;
+}
+
+.chat-sv-table tbody tr {
+    background: #fff;
+    border-bottom: 1px solid #F1F5F9;
+    transition: background 0.15s ease;
+}
+
+.chat-sv-table tbody tr:nth-child(even) {
+    background: #F8FAFC;
+}
+
+.chat-sv-table tbody tr:hover {
+    background: #EEF2FF;
+}
+
+.chat-sv-table td {
+    padding: 8px 10px;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+.chat-sv-table .sv-name {
+    font-weight: 600;
+    color: #1E293B;
+}
+
+.chat-sv-table .sv-code {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #475569;
+    background: #F1F5F9;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.chat-sv-table .sv-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.chat-sv-table .sv-status.active {
+    background: #DCFCE7;
+    color: #166534;
+}
+
+.chat-sv-table .sv-status.locked {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.chat-sv-table .sv-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.chat-sv-table .sv-email {
+    font-size: 11px;
+    color: #64748B;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-sv-table .sv-faculty {
+    font-size: 11.5px;
+    color: #475569;
+}
+
+.chat-sv-table .sv-class {
+    font-size: 11px;
+    color: #64748B;
+    background: #F8FAFC;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
 }
 
 /* ===================== QUICK ACTIONS ===================== */
@@ -941,7 +1062,7 @@ if($a != $c1){
 <header class="header-main" id="codinh">
     <div class="header-content">
         <div class="header-left">
-            <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo" class="header-logo"/>
+            <img src="./img/jahja.jpg" alt="Logo" class="header-logo"/>
             <div>
                 <div class="header-title">Trang Admin Hệ Thống</div>
                 <div class="header-subtitle">Quản trị viên</div>
@@ -1033,7 +1154,7 @@ if($a != $c1){
     </div>
 
     <!-- Chat Messages -->
-    <div class="chat-messages" id="chatMessages">
+    <div class="chat-messages"  id="chatMessages">
         <!-- Welcome Message -->
         <div class="welcome-bot">
             <div class="welcome-bot-icon">

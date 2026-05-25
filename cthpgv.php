@@ -2581,6 +2581,7 @@ else{
 <link rel="icon" type="image/png" href="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="shortcut icon" href="./img/jahja (1).ico" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="css/bootstrap.css"/>
 <script type="text/javascript" src="js/bootstrap.js"></script>
 <style>

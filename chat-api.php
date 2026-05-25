@@ -101,21 +101,69 @@ try {
         }
         
         $rs = json_decode($response1, true);
-        
+
+        // Build the response text
+        $responseText = "";
+        $extraTables = "";
+
         // Handle different response formats
         if (isset($rs['message'])) {
-            $responseText = is_array($rs['message']) ? $rs['message']['content'] : $rs['message'];
+            $msgData = $rs['message'];
+            $responseText = is_array($msgData) ? (isset($msgData['content']) ? $msgData['content'] : json_encode($msgData)) : $msgData;
         } elseif (isset($rs['response'])) {
-            $responseText = is_array($rs['response']) ? $rs['response']['content'] : $rs['response'];
+            $msgData = $rs['response'];
+            $responseText = is_array($msgData) ? (isset($msgData['content']) ? $msgData['content'] : json_encode($msgData)) : $msgData;
         } elseif (isset($rs['text'])) {
-            $responseText = is_array($rs['text']) ? $rs['text']['content'] : $rs['text'];
+            $msgData = $rs['text'];
+            $responseText = is_array($msgData) ? (isset($msgData['content']) ? $msgData['content'] : json_encode($msgData)) : $msgData;
         } elseif (isset($rs['output'])) {
-            $responseText = is_array($rs['output']) ? $rs['output']['content'] : $rs['output'];
+            $msgData = $rs['output'];
+            $responseText = is_array($msgData) ? (isset($msgData['content']) ? $msgData['content'] : json_encode($msgData)) : $msgData;
         } else {
             $responseText = is_string($rs) ? $rs : json_encode($rs);
         }
-        
-        echo json_encode(array('response' => $responseText));
+
+        // Nếu có danh sách sinh viên từ tool, format thành bảng HTML
+        if (isset($rs['sinhviens']) && is_array($rs['sinhviens']) && count($rs['sinhviens']) > 0) {
+            $extraTables .= '<div class="chat-sv-table-wrapper" style="margin-top:16px;">
+                <table class="chat-sv-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;">#</th>
+                            <th>Họ tên</th>
+                            <th>Mã SV</th>
+                            <th style="width:65px;">GT</th>
+                            <th style="width:90px;">Ngày sinh</th>
+                            <th style="width:100px;">Khoa</th>
+                            <th style="width:100px;">Lớp</th>
+                            <th style="width:120px;">Cơ sở</th>
+                            <th style="width:80px;">Trạng thái</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
+            $stt = 1;
+            foreach ($rs['sinhviens'] as $sv) {
+                $svTrangthai = isset($sv['trangthai']) ? $sv['trangthai'] : '';
+                $statusClass = ($svTrangthai === 'Khóa') ? 'locked' : 'active';
+                $extraTables .= '<tr>
+                    <td style="text-align:center; color:#94A3B8; font-size:11px;">' . $stt++ . '</td>
+                    <td class="sv-name">' . htmlspecialchars(isset($sv['tensinhvien']) ? $sv['tensinhvien'] : '') . '</td>
+                    <td class="sv-code">' . htmlspecialchars(isset($sv['masosinhvien']) ? $sv['masosinhvien'] : '') . '</td>
+                    <td style="text-align:center; font-size:11px;">' . htmlspecialchars(isset($sv['gioitinh']) ? $sv['gioitinh'] : '') . '</td>
+                    <td style="font-size:11.5px;">' . htmlspecialchars(isset($sv['ngaysinh']) ? $sv['ngaysinh'] : '') . '</td>
+                    <td class="sv-faculty">' . htmlspecialchars(isset($sv['khoa']) ? $sv['khoa'] : '') . '</td>
+                    <td class="sv-class">' . htmlspecialchars(isset($sv['lop']) ? $sv['lop'] : '') . '</td>
+                    <td style="font-size:11px; color:#64748B;">' . htmlspecialchars(isset($sv['cosodaotao']) ? $sv['cosodaotao'] : '') . '</td>
+                    <td><span class="sv-status ' . $statusClass . '">' . htmlspecialchars($svTrangthai) . '</span></td>
+                    <td class="sv-email" title="' . htmlspecialchars(isset($sv['email']) ? $sv['email'] : '') . '">' . htmlspecialchars(isset($sv['email']) ? $sv['email'] : '') . '</td>
+                </tr>';
+            }
+            $extraTables .= '</tbody></table></div>';
+        }
+
+        $finalResponse = $responseText . $extraTables;
+        echo json_encode(array('response' => $finalResponse));
         exit;
     }
     
@@ -157,7 +205,9 @@ try {
 // exit;
 
     // Bước 2: Search trong Qdrant
+
     $urlQdrant = "http://localhost:6333/collections/iuh_subjects/points/search";
+
     
     $dataQdrant = array(
         "vector" => $vector_data,
