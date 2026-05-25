@@ -601,7 +601,7 @@ if($k != $mk || $m != $ma){
 <div class="main-header">
     <div class="container-custom">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo" style="height: 65px; width: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+            <img src="./img/jahja.jpg" alt="Logo" style="height: 65px; width: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
             <h2 style="color: #667eea; margin: 0; font-size: 24px; font-weight: 700;">Thông Tin Sinh Viên</h2>
             <div style="width: 65px;"></div>
         </div>
@@ -967,7 +967,7 @@ echo date_format($ngaycap, 'd-m-Y');?></span>
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
-                <img src="https://tse3.mm.bing.net/th?id=OIP.mF4R5YAnHij_hccRrGDCYwAAAA&pid=Api&P=0&h=180" alt="School Logo" class="footer-logo" />
+                <img src="./img/jahja.jpg" alt="School Logo" class="footer-logo" />
                 <p><strong>Chào Mừng Đến Với Hệ Thống Quản Lý Học Vụ</strong></p>
                 <p>Nền tảng hiện đại để quản lý và theo dõi hoạt động học tập của bạn.</p>
             </div>

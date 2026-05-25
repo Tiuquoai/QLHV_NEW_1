@@ -1760,7 +1760,7 @@ p[style*="background: #fff3cd"] {
     <div class="container-custom">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <a href="homeSV.php?bm=<?php echo $_REQUEST['bm']; ?>">
-                <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo" style="height: 65px; width: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                <img src="./img/jahja.jpg" alt="Logo" style="height: 65px; width: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
             </a>
             <h2 style="color: #667eea; margin: 0; font-size: 24px; font-weight: 700;">📚 Chi Tiết Môn Học</h2>
             <div style="width: 65px; display: flex; align-items: center; justify-content: flex-end;">
@@ -3100,7 +3100,7 @@ echo $f['hotengiangvien']?> )</h5>
         <div class="footer-grid">
             <div class="footer-section">
                 <div class="footer-logo">
-                    <img src="https://tse3.mm.bing.net/th?id=OIP.mF4R5YAnHij_hccRrGDCYwAAAA&pid=Api&P=0&h=180" alt="Logo" />
+                    <img src="./img/jahja.jpg" alt="Logo" />
                     <h5>Chào Mừng</h5>
                 </div>
                 <p>Chào Mừng Các Bạn Đến Với Hệ Thống Quản Lý Học Vụ. Nơi Đây Giúp Bạn Theo Dõi Quá Trình Học Tập Của Mình.</p>

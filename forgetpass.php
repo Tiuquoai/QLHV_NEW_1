@@ -220,7 +220,7 @@ body {
 <div class="wrapper">
     <div class="card">
         <div class="card-header">
-            <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo" class="logo">
+            <img src="./img/jahja.jpg" alt="Logo" class="logo">
             <h2>Hệ Thống LMS</h2>
             <p>Học Trực Tuyến</p>
         </div>

@@ -531,7 +531,7 @@ body {
     <div class="container">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div class="logo-section">
-                <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo LMS">
+                <img src="./img/jahja.jpg" alt="Logo LMS">
                 <h1>Hệ Thống LMS</h1>
             </div>
             <div class="user-section">
@@ -638,7 +638,7 @@ body {
         <div class="footer-grid">
             <div class="footer-col">
                 <div class="footer-logo">
-                    <img src="https://tse3.mm.bing.net/th?id=OIP.mF4R5YAnHij_hccRrGDCYwAAAA&pid=Api&P=0&h=180" alt="Logo">
+                    <img src="./img/jahja.jpg" alt="Logo">
                     <h4 style="margin:0;color:white;">Hệ Thống LMS</h4>
                 </div>
                 <p>Chào mừng các bạn đến với Hệ Thống Học Trực Tuyến - Nền tảng hỗ trợ giảng dạy và học tập hiệu quả.</p>

@@ -273,7 +273,7 @@ $message = "Mã OTP của bạn là :".$OTP."";
      <div class="row">
      	<div class="col-xs-4 col-sm-4 col-md-44 col-lg-4">
         <br />
-       <img src="https://tse3.mm.bing.net/th?id=OIP.mF4R5YAnHij_hccRrGDCYwAAAA&pid=Api&P=0&h=180" height="75px" width="100px" />
+       <img src="./img/jahja.jpg" height="75px" width="100px" />
         <p></p>
         <p>Chào Mừng Các Bạn Đến Với Hệ Thống ...</p>
         <br />
