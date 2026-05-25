@@ -4,6 +4,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Login Successfully !</h1></title>
 <link rel="icon" type="image/png" href="https://tse2.explicit.bing.net/th?id=OIP.AcaQjWrR2eV624qu8m6nIgHaHa&pid=Api&P=0&h=180"/>
+<link rel="shortcut icon" href="./img/jahja (1).ico" type="image/x-icon">
 </head>
 
 <body>

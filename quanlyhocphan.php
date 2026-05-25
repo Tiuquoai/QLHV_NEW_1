@@ -354,6 +354,7 @@ if($k != $mk || $m != $ma){
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Quản Lý Học Phần</title>
 <link rel="icon" type="image/png" href="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180"/>
+<link rel="shortcut icon" href="./img/jahja (1).ico" type="image/x-icon">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>

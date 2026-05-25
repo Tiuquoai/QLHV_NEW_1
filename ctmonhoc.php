@@ -1746,6 +1746,8 @@ p[style*="background: #fff3cd"] {
 }
 </style>
 
+<link rel="icon" type="image/png" href="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180"/>
+<link rel="shortcut icon" href="./img/jahja (1).ico" type="image/x-icon">
 </head>
 
 <body>

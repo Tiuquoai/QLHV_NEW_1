@@ -62,7 +62,7 @@ class AgenticController:
                     })
                 
                 else:
-                    return {'message' : 'bạn không có thẩm quyền để yêu cầu việc này !!!!'}
+                    return {'message' : 'Bạn không có thẩm quyền để yêu cầu việc này !!!!'}
 
             return {
                 "message": (

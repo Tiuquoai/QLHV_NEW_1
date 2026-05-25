@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Đăng Nhập - Hệ Thống Quản Lý Học Vụ</title>
 <link rel="icon" type="image/png" href="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180"/>
+<link rel="shortcut icon" href="./img/jahja (1).ico" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="css/lms-modern.css"/>
 </head>
 
@@ -72,8 +73,48 @@
 
                 <input type="hidden" name="cd" value="<?php echo $_SESSION['captcha'];?>" />
                 <input type="hidden" name="dn" value="tiuquoaiiiii" />
+<div style="display:flex; gap:16px; margin-top:20px;">
 
-                <button type="submit" class="btn-login">📱 Đăng Nhập</button>
+    <a href="index.php"
+       style="
+       flex:1;
+       height:48px;
+       background:#f1f5f9;
+       color:#334155;
+       border:1px solid #dbe2ea;
+       border-radius:12px;
+       font-size:15px;
+       font-weight:600;
+       text-decoration:none;
+       display:flex;
+       align-items:center;
+       justify-content:center;
+       transition:0.25s;
+       ">
+       Quay Về
+    </a>
+
+    <button type="submit"
+        style="
+        flex:1;
+        height:48px;
+        border:none;
+        border-radius:12px;
+        font-size:15px;
+        font-weight:600;
+        cursor:pointer;
+        color:white;
+        background:linear-gradient(135deg,#4f46e5,#7c3aed);
+        box-shadow:0 4px 12px rgba(124,58,237,0.25);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        ">
+        📱 Đăng Nhập
+    </button>
+
+</div>
+              
                 
                 <div class="forgot-pass">
                     <a href="resetpass.php">❓ Quên Mật Khẩu?</a>
