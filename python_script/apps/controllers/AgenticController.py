@@ -17,10 +17,13 @@ class AgenticController:
             groq_api_key=os.getenv('GROQ_CLOUD_API'),
             temperature=0
         )
-
+        
         self.llm = llm_init.bind_tools([
-            self.all_tool.sending_email
+            self.all_tool.sending_email,
+            self.all_tool.all_sinhvien   
         ])
+        
+
 
     async def pickToolsFunc(self, message: str, roleName: str) -> dict:
 
@@ -51,6 +54,13 @@ class AgenticController:
                         "email1": tool_args.get('email1', ''),
                         "content": tool_args.get('content', '')
                     })
+                
+                elif tool_name == 'all_sinhvien' and roleName == 'admin':
+
+                    return await self.all_tool.all_sinhvien.ainvoke({
+                        "ten": tool_args.get('ten', '')
+                    })
+                
                 else:
                     return {'message' : 'bạn không có thẩm quyền để yêu cầu việc này !!!!'}
 
