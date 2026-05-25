@@ -941,7 +941,7 @@ if($a != $c1){
 <header class="header-main" id="codinh">
     <div class="header-content">
         <div class="header-left">
-            <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo" class="header-logo"/>
+            <img src="./img/jahja.jpg" alt="Logo" class="header-logo"/>
             <div>
                 <div class="header-title">Trang Admin Hệ Thống</div>
                 <div class="header-subtitle">Quản trị viên</div>
