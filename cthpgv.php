@@ -2923,6 +2923,18 @@ a:hover {
                         <span>Quản Lý Điểm</span>
                     </a>
                     <?php } ?>
+                    
+                    <?php if(isset($_REQUEST['gd']) && isset($_REQUEST['qtnmanage'])){ ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd=1&&qtnmanage=1#qtn" class="nav-tab active">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Bài Trắc Nghiệm</span>
+                    </a>
+                    <?php } else { ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd=1&&qtnmanage=1#qtn" class="nav-tab">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Bài Trắc Nghiệm</span>
+                    </a>
+                    <?php } ?>
                 </div>
             </div>
 
@@ -3276,6 +3288,301 @@ if(isset($_REQUEST['qld'])){
     }
     </style>
     <?php
+}
+// ==================== BÀI TẬP TRẮC NGHIỆM ====================
+elseif(isset($_REQUEST['gd']) && isset($_REQUEST['qtnmanage'])){
+    date_default_timezone_set('Asia/Ho_Chi_Minh');
+    include_once("Model/mTracNghiem.php");
+    $tracnghiem = new TracNghiemModel();
+    $tracnghiem->ketnoi();
+    
+    // Lấy id_giangday
+    $ihp = $_REQUEST['ihp'];
+    $il = $_REQUEST['il'];
+    $ig = $_REQUEST['ig'];
+    $sql_gd = "SELECT gd.id_giangday, gd.id 
+                FROM giangday gd 
+                JOIN monlop ml ON gd.id = ml.id 
+                WHERE gd.id_giangvien = '$ig' AND md5(ml.id_hocphan) = '$ihp' AND ml.id_lophocphan = '$il' 
+                LIMIT 1";
+    $qr_gd = mysql_query($sql_gd);
+    $gd = mysql_fetch_assoc($qr_gd);
+    $id_giangday = isset($gd['id_giangday']) ? $gd['id_giangday'] : 0;
+    
+    // Xử lý thêm bài tập - CHUYỂN SANG TRANG TẠO CÂU HỎI
+    if(isset($_POST['them_baitap'])) {
+        $tieude = addslashes($_POST['tieude']);
+        $mota = isset($_POST['mota']) ? addslashes($_POST['mota']) : '';
+        $thoigianlambai = intval($_POST['thoigianlambai']);
+        $soluongcauhoi = intval($_POST['soluongcauhoi']);
+        $diemmotcau = floatval($_POST['diemmotcau']);
+        $batdaunop = $_POST['batdaunop'];
+        $ketthucnop = $_POST['ketthucnop'];
+        $ngaydang = date('Y-m-d H:i:s');
+        
+        $sql = "INSERT INTO baitap_tracnghiem (tieude, mota, thoigianlambai, soluongcauhoi, diemmotcau, batdaunop, ketthucnop, ngaydang, id_giangday) 
+                VALUES ('$tieude', '$mota', '$thoigianlambai', '$soluongcauhoi', '$diemmotcau', '$batdaunop', '$ketthucnop', '$ngaydang', '$id_giangday')";
+        mysql_query($sql);
+        $new_id = mysql_insert_id();
+        
+        // Chuyển sang trang tạo câu hỏi ngay
+        $bm = $_REQUEST['bm'];
+        $ig = $_REQUEST['ig'];
+        $ihp_param = $_REQUEST['ihp'];
+        $il = $_REQUEST['il'];
+        echo "<script>window.location.href='tracnghiem_cauhoi_gv.php?qtn=".$new_id."&bm=".$bm."&ig=".$ig."&ihp=".$ihp_param."&il=".$il."&gd=1&&qtnmanage=1';</script>";
+        exit;
+    }
+    
+    // Xử lý xóa bài tập
+    if(isset($_GET['xoabaitap'])) {
+        $id_bttracnghiem = $_GET['xoabaitap'];
+        mysql_query("DELETE ct FROM chitiet_tracnghiem ct JOIN nopbai_tracnghiem nb ON ct.id_nopbai = nb.id_nopbai WHERE nb.id_bttracnghiem = '$id_bttracnghiem'");
+        mysql_query("DELETE FROM nopbai_tracnghiem WHERE id_bttracnghiem = '$id_bttracnghiem'");
+        $sql_cauhoi = "SELECT id_cauhoi FROM cauhoi_tracnghiem WHERE id_bttracnghiem = '$id_bttracnghiem'";
+        $qr_cauhoi = mysql_query($sql_cauhoi);
+        while($ch = mysql_fetch_assoc($qr_cauhoi)) {
+            mysql_query("DELETE FROM dapan_tracnghiem WHERE id_cauhoi = '".$ch['id_cauhoi']."'");
+        }
+        mysql_query("DELETE FROM cauhoi_tracnghiem WHERE id_bttracnghiem = '$id_bttracnghiem'");
+        mysql_query("DELETE FROM baitap_tracnghiem WHERE id_bttracnghiem = '$id_bttracnghiem'");
+        $success_msg = "Xóa bài tập thành công!";
+    }
+    
+    // Lấy danh sách bài tập
+    $sql_ds = "SELECT * FROM baitap_tracnghiem WHERE id_giangday = '$id_giangday' ORDER BY ngaydang DESC";
+    $qr_ds = mysql_query($sql_ds);
+?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <div id="qtn"></div>
+    
+    <?php if(isset($success_msg)): ?>
+    <div style="background: #ecfdf5; color: #059669; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+        <i class="fas fa-check-circle" style="font-size: 20px;"></i> <?php echo $success_msg; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Stats -->
+    <?php
+    $sql_count = "SELECT COUNT(*) as total FROM baitap_tracnghiem WHERE id_giangday = '$id_giangday'";
+    $qr_count = mysql_query($sql_count);
+    $stats = mysql_fetch_assoc($qr_count);
+    ?>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center;">
+            <div style="width: 56px; height: 56px; background: #eff6ff; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #2563eb; font-size: 24px;">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <h3 style="font-size: 32px; font-weight: 700; color: #1a1a2e;"><?php echo $stats['total']; ?></h3>
+            <p style="color: #6b7280; font-size: 14px;">Tổng Bài Tập</p>
+        </div>
+        <div style="background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center;">
+            <div style="width: 56px; height: 56px; background: #ecfdf5; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #059669; font-size: 24px;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 style="font-size: 32px; font-weight: 700; color: #1a1a2e;">
+                <?php 
+                $sql_active = "SELECT COUNT(*) as cnt FROM baitap_tracnghiem WHERE id_giangday = '$id_giangday' AND ketthucnop >= NOW()";
+                $qr_active = mysql_query($sql_active);
+                $active = mysql_fetch_assoc($qr_active);
+                echo $active['cnt'];
+                ?>
+            </h3>
+            <p style="color: #6b7280; font-size: 14px;">Đang Hoạt Động</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 24px 30px; color: #fff; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <h2 style="font-size: 24px; font-weight: 600; margin: 0;"><i class="fas fa-question-circle"></i> Quản Lý Bài Tập Trắc Nghiệm</h2>
+            <p style="margin: 4px 0 0 0; opacity: 0.9;">Tạo và quản lý bài kiểm tra trắc nghiệm cho sinh viên</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('addModal')" style="background: #fff; color: #667eea; padding: 12px 24px; border-radius: 10px; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-plus"></i> Thêm Bài Tập Mới
+        </button>
+    </div>
+
+    <!-- Table -->
+    <div style="background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden;">
+        <div style="padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;">
+            <h3 style="font-size: 18px; color: #1a1a2e; margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-table" style="color: #667eea;"></i> Danh Sách Bài Tập
+            </h3>
+        </div>
+        <div style="padding: 24px;">
+            <?php if(mysql_num_rows($qr_ds) > 0): ?>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <th style="padding: 14px 16px; text-align: left; color: #fff; font-weight: 600; font-size: 14px;">STT</th>
+                            <th style="padding: 14px 16px; text-align: left; color: #fff; font-weight: 600; font-size: 14px;">Tiêu Đề</th>
+                            <th style="padding: 14px 16px; text-align: center; color: #fff; font-weight: 600; font-size: 14px;">Thời Gian Làm</th>
+                            <th style="padding: 14px 16px; text-align: center; color: #fff; font-weight: 600; font-size: 14px;">Số Câu</th>
+                            <th style="padding: 14px 16px; text-align: center; color: #fff; font-weight: 600; font-size: 14px;">Mở Bài</th>
+                            <th style="padding: 14px 16px; text-align: center; color: #fff; font-weight: 600; font-size: 14px;">Đóng Bài</th>
+                            <th style="padding: 14px 16px; text-align: center; color: #fff; font-weight: 600; font-size: 14px;">Trạng Thái</th>
+                            <th style="padding: 14px 16px; text-align: center; color: #fff; font-weight: 600; font-size: 14px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $stt = 1;
+                        while($row = mysql_fetch_assoc($qr_ds)):
+                            $ketthuc = $row['ketthucnop'];
+                            $batdau = $row['batdaunop'];
+                            $now = date('Y-m-d H:i:s');
+                            $isExpired = $now > $ketthuc;
+                            $isPending = $now < $batdau;
+                        ?>
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 14px 16px;"><?php echo $stt++; ?></td>
+                            <td style="padding: 14px 16px;">
+                                <strong><?php echo htmlspecialchars($row['tieude']); ?></strong>
+                            </td>
+                            <td style="padding: 14px 16px; text-align: center;"><?php echo $row['thoigianlambai']; ?> phút</td>
+                            <td style="padding: 14px 16px; text-align: center;"><?php echo $row['soluongcauhoi']; ?> câu</td>
+                            <td style="padding: 14px 16px; text-align: center; font-size: 13px;"><?php echo date('d/m/Y H:i', strtotime($batdau)); ?></td>
+                            <td style="padding: 14px 16px; text-align: center; font-size: 13px;"><?php echo date('d/m/Y H:i', strtotime($ketthuc)); ?></td>
+                            <td style="padding: 14px 16px; text-align: center;">
+                                <?php if($isExpired): ?>
+                                <span style="background: #fef2f2; color: #dc2626; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600;"><i class="fas fa-clock"></i> Hết hạn</span>
+                                <?php elseif($isPending): ?>
+                                <span style="background: #fffbeb; color: #d97706; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600;"><i class="fas fa-hourglass-half"></i> Chưa mở</span>
+                                <?php else: ?>
+                                <span style="background: #ecfdf5; color: #059669; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600;"><i class="fas fa-check-circle"></i> Đang mở</span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="padding: 14px 16px; text-align: center;">
+                                <div style="display: flex; gap: 8px; justify-content: center;">
+                                    <a href="tracnghiem_cauhoi_gv.php?qtn=<?php echo $row['id_bttracnghiem']; ?>&&bm=<?php echo $_REQUEST['bm']; ?>&&ig=<?php echo $_REQUEST['ig']; ?>&&ihp=<?php echo $_REQUEST['ihp']; ?>&&il=<?php echo $_REQUEST['il']; ?>&&gd=1" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: #ecfdf5; color: #059669; border-radius: 10px; text-decoration: none;" title="Quản lý câu hỏi">
+                                        <i class="fas fa-list-ol"></i>
+                                    </a>
+                                    <a href="tracnghiem_danhsachnop_gv.php?dsbaitn=<?php echo $row['id_bttracnghiem']; ?>&&bm=<?php echo $_REQUEST['bm']; ?>&&ig=<?php echo $_REQUEST['ig']; ?>&&ihp=<?php echo $_REQUEST['ihp']; ?>&&il=<?php echo $_REQUEST['il']; ?>&&gd=1" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: #eff6ff; color: #2563eb; border-radius: 10px; text-decoration: none;" title="Danh sách bài nộp">
+                                        <i class="fas fa-users"></i>
+                                    </a>
+                                    <a href="cthpgv.php?xoabaitap=<?php echo $row['id_bttracnghiem']; ?>&&bm=<?php echo $_REQUEST['bm']; ?>&&ig=<?php echo $_REQUEST['ig']; ?>&&ihp=<?php echo $_REQUEST['ihp']; ?>&&il=<?php echo $_REQUEST['il']; ?>&&gd=1&&qtnmanage=1#qtn" onclick="return confirm('Bạn có chắc muốn xóa bài tập này?')" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: #fef2f2; color: #dc2626; border-radius: 10px; text-decoration: none;" title="Xóa">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div style="text-align: center; padding: 60px 20px;">
+                <i class="fas fa-inbox" style="font-size: 64px; color: #e5e7eb; margin-bottom: 16px;"></i>
+                <h4 style="color: #6b7280; margin-bottom: 8px;">Chưa có bài tập nào</h4>
+                <p style="color: #9ca3af;">Nhấn "Thêm Bài Tập Mới" để tạo bài kiểm tra đầu tiên</p>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Modal Thêm Bài Tập -->
+    <div id="addModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow: auto;">
+        <div style="background: #fff; border-radius: 20px; width: 90%; max-width: 600px; margin: 50px auto; max-height: 85vh; overflow-y: auto;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px 24px; color: #fff; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0;">
+                <h3 style="font-size: 18px; margin: 0;"><i class="fas fa-plus-circle"></i> Thêm Bài Tập Trắc Nghiệm</h3>
+                <button onclick="closeModal()" style="background: rgba(255,255,255,0.2); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px;"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="padding: 24px;">
+                <form action="" method="POST" id="formThemBaiTap">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Tiêu Đề <span style="color: red;">*</span></label>
+                        <input type="text" name="tieude" required placeholder="VD: Kiểm tra chương 1" style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Mô Tả</label>
+                        <textarea name="mota" rows="2" placeholder="Mô tả bài kiểm tra" style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; box-sizing: border-box;"></textarea>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <div style="float: left; width: 48%; margin-right: 4%;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Thời Gian Làm Bài (phút) <span style="color: red;">*</span></label>
+                            <input type="number" name="thoigianlambai" id="thoigianlambai" value="30" min="5" max="180" required style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; box-sizing: border-box;" onchange="tinhThoiGianKetThuc()">
+                        </div>
+                        <div style="float: left; width: 48%;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Số Câu Hỏi <span style="color: red;">*</span></label>
+                            <input type="number" name="soluongcauhoi" value="10" min="1" max="100" required style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div style="clear: both;"></div>
+                    </div>
+                    <div style="margin-bottom: 20px; clear: both;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Điểm Mỗi Câu <span style="color: red;">*</span></label>
+                        <input type="number" name="diemmotcau" value="1" min="0.1" max="10" step="0.1" required style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 20px; clear: both;">
+                        <div style="float: left; width: 48%; margin-right: 4%;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Thời Gian Bắt Đầu <span style="color: red;">*</span></label>
+                            <input type="datetime-local" name="batdaunop" id="batdaunop" value="<?php echo date('Y-m-d\TH:i'); ?>" required style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; box-sizing: border-box;" onchange="tinhThoiGianKetThuc()">
+                        </div>
+                        <div style="float: left; width: 48%;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Thời Gian Kết Thúc <span style="color: #6b7280;">(Tự động)</span></label>
+                            <input type="text" id="ketthuc_hienthi" readonly style="width: 100%; padding: 12px 16px; border: 2px solid #10b981; border-radius: 10px; font-size: 14px; box-sizing: border-box; background: #ecfdf5; color: #059669; font-weight: 600;">
+                            <input type="hidden" name="ketthucnop" id="ketthucnop">
+                        </div>
+                        <div style="clear: both;"></div>
+                    </div>
+                    <div style="background: #fffbeb; padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #fcd34d;">
+                        <p style="margin: 0; color: #92400e; font-size: 13px;">
+                            <i class="fas fa-info-circle"></i> Thời gian kết thúc sẽ được tự động tính = Thời gian bắt đầu + Thời gian làm bài
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid #e5e7eb; clear: both;">
+                        <button type="button" onclick="closeModal()" style="padding: 12px 24px; background: #6b7280; color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Hủy</button>
+                        <button type="submit" name="them_baitap" style="padding: 12px 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;"><i class="fas fa-save"></i> Lưu Bài Tập</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openModal() { 
+        document.getElementById('addModal').style.display = 'block'; 
+        document.body.style.overflow = 'hidden';
+        tinhThoiGianKetThuc();
+    }
+    function closeModal() { 
+        document.getElementById('addModal').style.display = 'none'; 
+        document.body.style.overflow = 'auto'; 
+    }
+    window.onclick = function(event) { 
+        var modal = document.getElementById('addModal');
+        if (event.target === modal) { 
+            modal.style.display = 'none'; 
+            document.body.style.overflow = 'auto'; 
+        } 
+    }
+    function tinhThoiGianKetThuc() {
+        var batdau = document.getElementById('batdaunop').value;
+        var thoigian = parseInt(document.getElementById('thoigianlambai').value) || 30;
+        
+        if(batdau) {
+            var startDate = new Date(batdau);
+            startDate.setMinutes(startDate.getMinutes() + thoigian);
+            
+            var nam = startDate.getFullYear();
+            var thang = String(startDate.getMonth() + 1).padStart(2, '0');
+            var ngay = String(startDate.getDate()).padStart(2, '0');
+            var gio = String(startDate.getHours()).padStart(2, '0');
+            var phut = String(startDate.getMinutes()).padStart(2, '0');
+            
+            var ketthuc = nam + '-' + thang + '-' + ngay + 'T' + gio + ':' + phut;
+            document.getElementById('ketthucnop').value = ketthuc;
+            
+            var ngay_f = ngay + '/' + thang + '/' + nam + ' ' + gio + ':' + phut;
+            document.getElementById('ketthuc_hienthi').value = ngay_f;
+        }
+    }
+    // Tính thời gian kết thúc khi load trang
+    window.onload = tinhThoiGianKetThuc;
+    </script>
+<?php
+    $tracnghiem->dongketnoi();
 }
 elseif(isset($_REQUEST['bdtk'])){
 	?>
@@ -3817,9 +4124,15 @@ while($ttm=mysql_fetch_assoc($qr)){
         <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1">
         </div>
     </div>
-    <center>
-    <a href="abc.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&
-    il=<?php echo $_REQUEST['il'] ?>&&xf"><button>Tải Excel</button></a></center>
+    
+    <!-- Nút Tải Excel - Modern Style -->
+    <div style="text-align: center; padding: 20px 0;">
+        <a href="abc.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&xf" 
+           style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; padding: 14px 32px; border-radius: 50px; font-size: 15px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+            <i class="fas fa-file-excel" style="font-size: 18px;"></i>
+            <span>Tải Xuống Danh Sách Điểm</span>
+        </a>
+    </div>
     <?php
 }
 else{
