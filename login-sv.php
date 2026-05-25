@@ -19,7 +19,7 @@
 <div class="main-header">
     <div class="container-custom">
         <div class="logo-section">
-            <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo" />
+            <img src="./img/jahja.jpg" alt="Logo" />
             <div class="school-info">
                 <h2>Hệ Thống Quản Lý Học Vụ</h2>
                 <p>Student Learning Management System</p>
@@ -85,7 +85,7 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
-                <img src="https://tse3.mm.bing.net/th?id=OIP.mF4R5YAnHij_hccRrGDCYwAAAA&pid=Api&P=0&h=180" alt="School Logo" class="footer-logo" />
+                <img src="./img/jahja.jpg" alt="School Logo" class="footer-logo" />
                 <p><strong>Chào Mừng Đến Với Hệ Thống Quản Lý Học Vụ</strong></p>
                 <p>Nền tảng hiện đại để quản lý và theo dõi hoạt động học tập của bạn.</p>
             </div>

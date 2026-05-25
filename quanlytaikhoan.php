@@ -2461,7 +2461,7 @@ else{
     <div class="footer-content">
         <div class="footer-grid">
             <div class="footer-brand">
-                <img src="https://tse3.mm.bing.net/th?id=OIP.mF4R5YAnHij_hccRrGDCYwAAAA&pid=Api&P=0&h=180" alt="Logo" class="footer-brand-logo"/>
+                <img src="./img/jahja.jpg" alt="Logo" class="footer-brand-logo"/>
                 <p>Chào Mừng Các Bạn Đến Với Hệ Thống Quản Trị Thông Minh - Giải pháp quản lý toàn diện cho mọi nhu cầu.</p>
             </div>
 
