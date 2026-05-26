@@ -1835,9 +1835,292 @@ p[style*="background: #fff3cd"] {
         <?php } else{ ?>
             <a href="chat-ai-sv.php?bm=<?php echo $_REQUEST['bm'] ?>&is=<?php echo $_REQUEST['is'] ?>&ihp=<?php echo $_REQUEST['ihp']?>&il=<?php echo $_REQUEST['il'] ?>" class="nav-tab-item">🤖 Chat AI</a>
         <?php } ?>
+
+        <?php if(isset($_REQUEST['tn'])){ ?>
+            <a href="ctmonhoc.php?bm=<?php echo $_REQUEST['bm'] ?>&is=<?php echo $_REQUEST['is'] ?>&ihp=<?php echo $_REQUEST['ihp']?>&il=<?php echo $_REQUEST['il'] ?>&tn" class="nav-tab-item active">📝 Bài Trắc Nghiệm</a>
+        <?php } else{ ?>
+            <a href="ctmonhoc.php?bm=<?php echo $_REQUEST['bm'] ?>&is=<?php echo $_REQUEST['is'] ?>&ihp=<?php echo $_REQUEST['ihp']?>&il=<?php echo $_REQUEST['il'] ?>&tn" class="nav-tab-item">📝 Bài Trắc Nghiệm</a>
+        <?php } ?>
+
+        <?php if(isset($_REQUEST['tnhistory'])){ ?>
+            <a href="ctmonhoc.php?bm=<?php echo $_REQUEST['bm'] ?>&is=<?php echo $_REQUEST['is'] ?>&ihp=<?php echo $_REQUEST['ihp']?>&il=<?php echo $_REQUEST['il'] ?>&tnhistory" class="nav-tab-item active">📋 Lịch Sử Thi</a>
+        <?php } else{ ?>
+            <a href="ctmonhoc.php?bm=<?php echo $_REQUEST['bm'] ?>&is=<?php echo $_REQUEST['is'] ?>&ihp=<?php echo $_REQUEST['ihp']?>&il=<?php echo $_REQUEST['il'] ?>&tnhistory" class="nav-tab-item">📋 Lịch Sử Thi</a>
+        <?php } ?>
     </div>
 
 <?php
+// ===== LICH SU THI TRAC NGHIEM =====
+if(isset($_REQUEST['tnhistory'])){
+    date_default_timezone_set('Asia/Ho_Chi_Minh');
+    include_once("Model/mTracNghiem.php");
+    $tracnghiem = new TracNghiemModel();
+    $kn_tn = $tracnghiem->ketnoi();
+    
+    $is = isset($_REQUEST['is']) ? $_REQUEST['is'] : '';
+    $il = isset($_REQUEST['il']) ? $_REQUEST['il'] : '';
+    $ihp = isset($_REQUEST['ihp']) ? $_REQUEST['ihp'] : '';
+    $bm = isset($_REQUEST['bm']) ? $_REQUEST['bm'] : '';
+    
+    // Lấy id_giangday
+    $sql_gd = "SELECT gd.id_giangday 
+                FROM giangday gd 
+                JOIN monlop ml ON gd.id = ml.id 
+                WHERE md5(ml.id_hocphan) = '$ihp' AND ml.id_lophocphan = '$il' 
+                LIMIT 1";
+    $qr_gd = mysql_query($sql_gd);
+    $gd = $qr_gd ? mysql_fetch_assoc($qr_gd) : null;
+    $id_giangday = ($gd && isset($gd['id_giangday'])) ? $gd['id_giangday'] : 0;
+?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <div class="content-section">
+        <h4><i class="fas fa-history"></i> Lịch Sử Làm Bài Trắc Nghiệm</h4>
+        
+        <?php
+        // Lấy lịch sử thi của sinh viên
+        $sql_history = "SELECT nb.*, bt.tieude, bt.soluongcauhoi, bt.diemmotcau, bt.thoigianlambai, bt.batdaunop, bt.ketthucnop
+                        FROM nopbai_tracnghiem nb
+                        JOIN baitap_tracnghiem bt ON nb.id_bttracnghiem = bt.id_bttracnghiem
+                        WHERE nb.id_sinhvien = '$is' AND bt.id_giangday = '$id_giangday'
+                        ORDER BY nb.thoigian_nop DESC";
+        $qr_history = mysql_query($sql_history);
+        ?>
+        
+        <?php if($qr_history && mysql_num_rows($qr_history) > 0): ?>
+        <div style="overflow-x: auto; margin-top: 20px;">
+            <table style="width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;">
+                        <th style="padding: 14px 16px; text-align: left; font-weight: 600;">Bài Thi</th>
+                        <th style="padding: 14px 16px; text-align: center; font-weight: 600;">Ngày Thi</th>
+                        <th style="padding: 14px 16px; text-align: center; font-weight: 600;">Điểm</th>
+                        <th style="padding: 14px 16px; text-align: center; font-weight: 600;">Đúng/Tổng</th>
+                        <th style="padding: 14px 16px; text-align: center; font-weight: 600;">Trạng Thái</th>
+                        <th style="padding: 14px 16px; text-align: center; font-weight: 600;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while($row = mysql_fetch_assoc($qr_history)): ?>
+                    <?php 
+                        $tongdiem = $row['soluongcauhoi'] * $row['diemmotcau'];
+                        $tile = round(($row['diem'] / $tongdiem) * 100, 1);
+                    ?>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 14px 16px;">
+                            <strong><?php echo htmlspecialchars($row['tieude']); ?></strong>
+                            <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                                <i class="fas fa-clock"></i> <?php echo $row['thoigianlambai']; ?> phút
+                            </div>
+                        </td>
+                        <td style="padding: 14px 16px; text-align: center; font-size: 14px;">
+                            <?php echo date('d/m/Y H:i', strtotime($row['thoigian_nop'])); ?>
+                        </td>
+                        <td style="padding: 14px 16px; text-align: center;">
+                            <span style="font-size: 20px; font-weight: 700; color: <?php echo $row['diem'] >= $tongdiem * 0.8 ? '#10b981' : ($row['diem'] >= $tongdiem * 0.5 ? '#d97706' : '#dc2626'); ?>;">
+                                <?php echo $row['diem']; ?>
+                            </span>
+                            <div style="font-size: 11px; color: #6b7280;">/ <?php echo $tongdiem; ?> điểm</div>
+                        </td>
+                        <td style="padding: 14px 16px; text-align: center;">
+                            <span style="font-weight: 600; color: #10b981;"><?php echo $row['socautraloi_dung']; ?></span>
+                            <span style="color: #6b7280;"> / <?php echo $row['soluongcauhoi']; ?></span>
+                            <div style="font-size: 11px; color: #6b7280;"><?php echo $tile; ?>%</div>
+                        </td>
+                        <td style="padding: 14px 16px; text-align: center;">
+                            <?php if($tile >= 80): ?>
+                                <span style="background: #ecfdf5; color: #059669; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600;">
+                                    <i class="fas fa-star"></i> Giỏi
+                                </span>
+                            <?php elseif($tile >= 60): ?>
+                                <span style="background: #fffbeb; color: #d97706; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600;">
+                                    <i class="fas fa-thumbs-up"></i> Khá
+                                </span>
+                            <?php elseif($tile >= 40): ?>
+                                <span style="background: #fef3c7; color: #f59e0b; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600;">
+                                    <i class="fas fa-meh"></i> Trung Bình
+                                </span>
+                            <?php else: ?>
+                                <span style="background: #fef2f2; color: #dc2626; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600;">
+                                    <i class="fas fa-times"></i> Yếu
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <td style="padding: 14px 16px; text-align: center;">
+                            <a href="tracnghiem_sv_lambai.php?bm=<?php echo $bm; ?>&is=<?php echo $is; ?>&ihp=<?php echo $ihp; ?>&il=<?php echo $il; ?>&qtn=<?php echo $row['id_bttracnghiem']; ?>&xem=1" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #eff6ff; color: #2563eb; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;">
+                                <i class="fas fa-eye"></i> Xem chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+        
+        <?php
+        // Thống kê tổng quan
+        $sql_stats = "SELECT 
+                        COUNT(*) as tong_so_lan,
+                        SUM(socautraloi_dung) as tong_cau_dung,
+                        AVG(diem) as diem_trung_binh,
+                        MAX(diem) as diem_cao_nhat
+                      FROM nopbai_tracnghiem nb
+                      JOIN baitap_tracnghiem bt ON nb.id_bttracnghiem = bt.id_bttracnghiem
+                      WHERE nb.id_sinhvien = '$is' AND bt.id_giangday = '$id_giangday'";
+        $qr_stats = @mysql_query($sql_stats);
+        $stats = @mysql_fetch_assoc($qr_stats);
+        if(!$stats) $stats = array('tong_so_lan'=>0, 'tong_cau_dung'=>0, 'diem_trung_binh'=>0, 'diem_cao_nhat'=>0);
+        ?>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 24px;">
+            <div style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center;">
+                <div style="width: 50px; height: 50px; background: #eff6ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #2563eb; font-size: 22px;">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h3 style="font-size: 28px; font-weight: 700; color: #1a1a2e; margin: 0;"><?php echo intval($stats['tong_so_lan']); ?></h3>
+                <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0;">Tổng Số Lần Thi</p>
+            </div>
+            <div style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center;">
+                <div style="width: 50px; height: 50px; background: #ecfdf5; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #059669; font-size: 22px;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 style="font-size: 28px; font-weight: 700; color: #1a1a2e; margin: 0;"><?php echo round(floatval($stats['diem_trung_binh']), 1); ?></h3>
+                <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0;">Điểm Trung Bình</p>
+            </div>
+            <div style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center;">
+                <div style="width: 50px; height: 50px; background: #fef3c7; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #d97706; font-size: 22px;">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3 style="font-size: 28px; font-weight: 700; color: #1a1a2e; margin: 0;"><?php echo round(floatval($stats['diem_cao_nhat']), 1); ?></h3>
+                <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0;">Điểm Cao Nhất</p>
+            </div>
+            <div style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center;">
+                <div style="width: 50px; height: 50px; background: #f3e8ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #9333ea; font-size: 22px;">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3 style="font-size: 28px; font-weight: 700; color: #1a1a2e; margin: 0;"><?php echo intval($stats['tong_cau_dung']); ?></h3>
+                <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0;">Tổng Câu Đúng</p>
+            </div>
+        </div>
+        
+        <?php else: ?>
+        <div style="text-align: center; padding: 60px 20px; background: #fff; border-radius: 16px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+            <i class="fas fa-clipboard-list" style="font-size: 64px; color: #e5e7eb; margin-bottom: 16px;"></i>
+            <h4 style="color: #6b7280; margin-bottom: 8px;">Chưa có lịch sử thi</h4>
+            <p style="color: #9ca3af;">Bạn chưa làm bài trắc nghiệm nào. Vào tab "Bài Trắc Nghiệm" để bắt đầu thi.</p>
+        </div>
+        <?php endif; ?>
+    </div>
+<?php
+}
+// ===== BAI TAP TRAC NGHIEM =====
+if(isset($_REQUEST['tn'])){
+    date_default_timezone_set('Asia/Ho_Chi_Minh');
+    include_once("Model/mTracNghiem.php");
+    $tracnghiem = new TracNghiemModel();
+    $kn_tn = $tracnghiem->ketnoi();
+    
+    $is = isset($_REQUEST['is']) ? $_REQUEST['is'] : '';
+    $il = isset($_REQUEST['il']) ? $_REQUEST['il'] : '';
+    $ihp = isset($_REQUEST['ihp']) ? $_REQUEST['ihp'] : '';
+    $bm = isset($_REQUEST['bm']) ? $_REQUEST['bm'] : '';
+    
+    // Lấy id_giangday
+    $sql_gd = "SELECT gd.id_giangday 
+                FROM giangday gd 
+                JOIN monlop ml ON gd.id = ml.id 
+                WHERE md5(ml.id_hocphan) = '$ihp' AND ml.id_lophocphan = '$il' 
+                LIMIT 1";
+    $qr_gd = mysql_query($sql_gd);
+    $gd = $qr_gd ? mysql_fetch_assoc($qr_gd) : null;
+    $id_giangday = ($gd && isset($gd['id_giangday'])) ? $gd['id_giangday'] : 0;
+    
+    // Lấy danh sách bài tập
+    $sql_ds = "SELECT * FROM baitap_tracnghiem WHERE id_giangday = '$id_giangday' ORDER BY ngaydang DESC";
+    $qr_ds = mysql_query($sql_ds);
+    if(!$qr_ds) $qr_ds = false;
+    
+    // Kiểm tra sinh viên đã làm bài nào chưa
+    $baida_nop = array();
+    if($is) {
+        $sql_dathamgia = "SELECT * FROM nopbai_tracnghiem WHERE id_sinhvien = '$is'";
+        $qr_dathamgia = mysql_query($sql_dathamgia);
+        if($qr_dathamgia) {
+            while($row = mysql_fetch_assoc($qr_dathamgia)) {
+                $baida_nop[$row['id_bttracnghiem']] = $row;
+            }
+        }
+    }
+?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <div class="content-section">
+        <h4><i class="fas fa-question-circle"></i> Bài Tập Trắc Nghiệm</h4>
+        
+        <?php if(mysql_num_rows($qr_ds) > 0): ?>
+        <div style="display: grid; gap: 16px; margin-top: 20px;">
+            <?php while($row = mysql_fetch_assoc($qr_ds)): ?>
+            <?php
+                $now = date('Y-m-d H:i:s');
+                $ketthuc = $row['ketthucnop'];
+                $batdau = $row['batdaunop'];
+                $isExpired = $now > $ketthuc;
+                $isPending = $now < $batdau;
+                $dadong = $isExpired || $isPending;
+                
+                $da_nop = isset($baida_nop[$row['id_bttracnghiem']]);
+                $diem = $da_nop ? $baida_nop[$row['id_bttracnghiem']]['diem'] : null;
+            ?>
+            <div style="background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 4px solid <?php echo $dadong ? '#e5e7eb' : ($da_nop ? '#10b981' : '#667eea'); ?>;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <h5 style="margin: 0 0 8px 0; color: #1a1a2e; font-size: 17px;">
+                            <i class="fas fa-file-alt" style="color: #667eea; margin-right: 8px;"></i>
+                            <?php echo htmlspecialchars($row['tieude']); ?>
+                        </h5>
+                        <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">
+                            <?php echo htmlspecialchars($row['mota']); ?>
+                        </p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: #6b7280;">
+                            <span><i class="fas fa-clock"></i> <?php echo $row['thoigianlambai']; ?> phút</span>
+                            <span><i class="fas fa-question-circle"></i> <?php echo $row['soluongcauhoi']; ?> câu</span>
+                            <span><i class="fas fa-star"></i> <?php echo $row['diemmotcau']; ?> điểm/câu</span>
+                            <span><i class="fas fa-calendar"></i> <?php echo date('d/m/Y H:i', strtotime($batdau)); ?> - <?php echo date('d/m/Y H:i', strtotime($ketthuc)); ?></span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <?php if($da_nop): ?>
+                            <div style="background: #ecfdf5; color: #059669; padding: 10px 16px; border-radius: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle"></i> Đã nộp - <strong><?php echo $diem; ?> điểm</strong>
+                            </div>
+                            <a href="tracnghiem_sv_lambai.php?bm=<?php echo $bm; ?>&is=<?php echo $is; ?>&ihp=<?php echo $ihp; ?>&il=<?php echo $il; ?>&qtn=<?php echo $row['id_bttracnghiem']; ?>&xem=1" style="display: inline-block; padding: 8px 16px; background: #eff6ff; color: #2563eb; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;">
+                                <i class="fas fa-eye"></i> Xem lại bài
+                            </a>
+                        <?php elseif($isExpired): ?>
+                            <div style="background: #fef2f2; color: #dc2626; padding: 10px 16px; border-radius: 10px;">
+                                <i class="fas fa-clock"></i> Đã hết hạn
+                            </div>
+                        <?php elseif($isPending): ?>
+                            <div style="background: #fffbeb; color: #d97706; padding: 10px 16px; border-radius: 10px;">
+                                <i class="fas fa-hourglass-half"></i> Chưa đến giờ thi
+                            </div>
+                        <?php else: ?>
+                            <a href="tracnghiem_sv_lambai.php?bm=<?php echo $bm; ?>&is=<?php echo $is; ?>&ihp=<?php echo $ihp; ?>&il=<?php echo $il; ?>&qtn=<?php echo $row['id_bttracnghiem']; ?>" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 10px; text-decoration: none; font-weight: 600;">
+                                <i class="fas fa-play"></i> Làm Bài
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endwhile; ?>
+        </div>
+        <?php else: ?>
+        <div style="text-align: center; padding: 40px 20px; color: #9ca3af;">
+            <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i>
+            <p>Chưa có bài tập trắc nghiệm nào.</p>
+        </div>
+        <?php endif; ?>
+    </div>
+<?php
+}
 // ===== HIEN THI NOI DUNG CHINH =====
 if(isset($_REQUEST['nopbai'])){
     // Form nop bai ly thuyet
