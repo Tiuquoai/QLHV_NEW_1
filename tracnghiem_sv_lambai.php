@@ -1,688 +1,701 @@
+<?php
+session_start();
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+
+if(!isset($_REQUEST['bm'])){
+    echo header("refresh:0,url='index.php'");
+    exit;
+}
+include_once("Model/mKetNoiSV.php");
+$p=new ketnoiSV();
+$kn=$p->ketnoi($ketnoi);
+$ma=$_REQUEST['bm'];
+$sql="select * from user where user_code='$ma'";
+$qr=mysql_query($sql);
+$r=mysql_fetch_assoc($qr);
+$ma=$r['user_code'];
+$mk=$r['matkhau'];
+$k=$_SESSION['mk'];
+$m=$_SESSION['ma'];
+if($k != $mk || $m != $ma){
+    echo header("refresh:0,url='index.php'");
+    exit;
+}
+
+$qtn = isset($_REQUEST['qtn']) ? intval($_REQUEST['qtn']) : 0;
+$is = isset($_REQUEST['is']) ? $_REQUEST['is'] : '';
+$bm = isset($_REQUEST['bm']) ? $_REQUEST['bm'] : '';
+$ihp = isset($_REQUEST['ihp']) ? $_REQUEST['ihp'] : '';
+$il = isset($_REQUEST['il']) ? $_REQUEST['il'] : '';
+$xem = isset($_REQUEST['xem']) ? true : false;
+
+// Lấy thông tin bài tập
+$sql_bt = "SELECT * FROM baitap_tracnghiem WHERE id_bttracnghiem = '$qtn'";
+$qr_bt = mysql_query($sql_bt);
+$bai_tap = mysql_fetch_assoc($qr_bt);
+
+// Kiểm tra thời gian
+$now = date('Y-m-d H:i:s');
+$batdau = $bai_tap['batdaunop'];
+$ketthuc = $bai_tap['ketthucnop'];
+$isExpired = $now > $ketthuc;
+$isPending = $now < $batdau;
+
+// Kiểm tra đã nộp chưa
+$sql_nop = "SELECT * FROM nopbai_tracnghiem WHERE id_sinhvien = '$is' AND id_bttracnghiem = '$qtn'";
+$qr_nop = mysql_query($sql_nop);
+$da_nop = mysql_num_rows($qr_nop) > 0;
+$baida = $da_nop ? mysql_fetch_assoc($qr_nop) : null;
+
+// Xác định có đang làm bài hay không
+$dang_lam_bai = !$da_nop && !$isExpired && !$isPending && !$xem;
+
+// Tính thời gian còn lại
+$thoigian_conlai = 0;
+if($dang_lam_bai) {
+    $time_ketthuc = strtotime($ketthuc);
+    $time_now = time();
+    $thoigian_conlai = max(0, $time_ketthuc - $time_now);
+}
+
+// XỬ LÝ NỘP BÀI - Chỉ khi POST có nop_bai và chưa nộp
+if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nop_bai']) && !$da_nop) {
+    // Tạo bản ghi nộp bài
+    $sql_insert_nop = "INSERT INTO nopbai_tracnghiem (id_bttracnghiem, id_sinhvien, diem, socautraloi_dung, thoigian_nop, trangthai) 
+                        VALUES ('$qtn', '$is', 0, 0, NOW(), 'daday')";
+    mysql_query($sql_insert_nop);
+    $id_nopbai = mysql_insert_id();
+    
+    $socaudung = 0;
+    $tongdiem = 0;
+    
+    // Lưu từng câu trả lời và chấm điểm
+    foreach($_POST as $key => $value) {
+        if(substr($key, 0, 4) == 'cau_') {
+            $id_cauhoi = intval(substr($key, 4));
+            $id_dapan = intval($value);
+            
+            // Kiểm tra đáp án đúng
+            $sql_check = "SELECT * FROM dapan_tracnghiem WHERE id_dapan = '$id_dapan' AND ladapan_dung = 1";
+            $qr_check = mysql_query($sql_check);
+            $dung = mysql_num_rows($qr_check) > 0;
+            
+            if($dung) {
+                $socaudung++;
+                $tongdiem += $bai_tap['diemmotcau'];
+            }
+            
+            $dung_sai = $dung ? 1 : 0;
+            mysql_query("INSERT INTO chitiet_tracnghiem (id_nopbai, id_cauhoi, id_dapan_chon, dung_sai) 
+                        VALUES ('$id_nopbai', '$id_cauhoi', '$id_dapan', '$dung_sai')");
+        }
+    }
+    
+    mysql_query("UPDATE nopbai_tracnghiem SET socautraloi_dung = '$socaudung', diem = '$tongdiem' WHERE id_nopbai = '$id_nopbai'");
+    
+    // Chuyển về trang kết quả
+    header("Location: tracnghiem_sv_lambai.php?bm=$bm&is=$is&ihp=$ihp&il=$il&qtn=$qtn&xem=1");
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Làm Bài Tập Trắc Nghiệm</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Làm Bài Trắc Nghiệm</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
         
-        .exam-container { max-width: 900px; margin: 0 auto; padding: 20px; }
-        
-        /* Header */
-        .exam-header {
+        .header-bar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            padding: 24px 30px;
             color: #fff;
-            margin-bottom: 24px;
-            position: sticky;
+            padding: 16px 24px;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 100;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         
-        .exam-header h1 { font-size: 24px; margin-bottom: 8px; }
-        .exam-header p { opacity: 0.9; font-size: 14px; }
-        
-        /* Timer */
-        .timer-box {
-            display: inline-flex;
+        .header-bar h2 {
+            font-size: 18px;
+            display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+        }
+        
+        .timer-box {
             background: rgba(255,255,255,0.2);
             padding: 10px 20px;
-            border-radius: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-size: 18px;
             font-weight: 700;
         }
         
-        .timer-box.warning { background: #ef4444; animation: pulse 1s infinite; }
+        .timer-box.warning { background: #dc2626; animation: pulse 1s infinite; }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
         
-        /* Progress */
-        .progress-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-top: 16px;
-            flex-wrap: wrap;
+        .main-container {
+            max-width: 900px;
+            margin: 80px auto 20px;
+            padding: 20px;
         }
         
-        .progress-item {
+        .quiz-info {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .quiz-info-item {
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 14px;
+            color: #6b7280;
         }
         
-        /* Question Card */
+        .quiz-info-item i { color: #667eea; }
+        
         .question-card {
             background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            padding: 30px;
+            border-radius: 16px;
+            padding: 24px;
             margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        
+        .question-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
         }
         
         .question-number {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
             width: 36px;
             height: 36px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: 700;
-            margin-right: 12px;
+            flex-shrink: 0;
         }
         
         .question-text {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1a1a2e;
+            flex: 1;
+            font-size: 16px;
             line-height: 1.6;
-            margin-bottom: 24px;
+            color: #1a1a2e;
         }
         
-        /* Answer Options */
+        .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-left: 48px;
+        }
+        
         .answer-option {
             display: flex;
             align-items: center;
-            padding: 16px 20px;
-            background: #f8fafc;
+            padding: 14px 18px;
             border: 2px solid #e5e7eb;
             border-radius: 12px;
-            margin-bottom: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
         
         .answer-option:hover {
             border-color: #667eea;
-            background: #f0f4ff;
+            background: #f8f9ff;
         }
         
         .answer-option.selected {
             border-color: #667eea;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: #eef2ff;
         }
         
-        .answer-option .option-letter {
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fff;
-            border-radius: 8px;
-            font-weight: 700;
-            margin-right: 16px;
-            flex-shrink: 0;
-            transition: all 0.3s ease;
+        .answer-option.correct {
+            border-color: #10b981;
+            background: #ecfdf5;
         }
         
-        .answer-option.selected .option-letter {
-            background: rgba(255,255,255,0.2);
-            color: #fff;
+        .answer-option.incorrect {
+            border-color: #dc2626;
+            background: #fef2f2;
         }
         
-        .answer-option .option-text {
-            flex: 1;
-            font-size: 15px;
-            line-height: 1.5;
+        .answer-option.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
         }
         
-        .answer-option input[type="radio"] {
-            display: none;
-        }
-        
-        /* Navigation */
-        .exam-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .nav-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
+        .answer-radio {
+            width: 22px;
+            height: 22px;
+            margin-right: 14px;
             cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s ease;
+            accent-color: #667eea;
         }
         
-        .nav-btn.prev { background: #f3f4f6; color: #374151; }
-        .nav-btn.next { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
-        .nav-btn.submit { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; }
-        .nav-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        
-        /* Result */
-        .result-card {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            padding: 40px;
-            text-align: center;
+        .answer-label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 15px;
         }
         
-        .result-icon {
-            width: 120px;
-            height: 120px;
+        .answer-icon {
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 24px;
-            font-size: 60px;
+            margin-left: auto;
         }
         
-        .result-icon.excellent { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; }
-        .result-icon.good { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #fff; }
-        .result-icon.average { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; }
-        .result-icon.poor { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff; }
+        .answer-icon.correct { background: #10b981; color: #fff; }
+        .answer-icon.incorrect { background: #dc2626; color: #fff; }
+        
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16,185,129,0.4); }
+        .btn-secondary { background: #6b7280; color: #fff; }
+        .btn-secondary:hover { transform: translateY(-2px); }
+        
+        .progress-bar {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .progress-info {
+            font-size: 14px;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+        
+        .progress-track {
+            flex: 1;
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        
+        .result-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .result-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 36px;
+        }
+        
+        .result-icon.success { background: #ecfdf5; color: #10b981; }
+        .result-icon.info { background: #eff6ff; color: #2563eb; }
         
         .result-score {
-            font-size: 72px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 48px;
+            font-weight: 700;
+            color: #1a1a2e;
             margin-bottom: 8px;
         }
         
-        .result-label { font-size: 18px; color: #6b7280; margin-bottom: 24px; }
+        .result-label {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
         
         .result-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 16px;
-            margin-bottom: 32px;
+            margin-bottom: 30px;
         }
         
-        .stat-item {
+        .stat-box {
             background: #f8fafc;
-            padding: 20px;
-            border-radius: 12px;
-        }
-        
-        .stat-item h4 { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
-        .stat-item p { font-size: 13px; color: #6b7280; }
-        
-        .stat-item.correct h4 { color: #10b981; }
-        .stat-item.wrong h4 { color: #ef4444; }
-        .stat-item.total h4 { color: #667eea; }
-        
-        /* Detail Results */
-        .result-detail {
-            text-align: left;
-            margin-top: 32px;
-        }
-        
-        .result-detail h3 {
-            font-size: 18px;
-            color: #1a1a2e;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .result-detail h3 i { color: #667eea; }
-        
-        .detail-item {
             padding: 16px;
-            background: #f8fafc;
             border-radius: 12px;
-            margin-bottom: 12px;
-            border-left: 4px solid;
         }
         
-        .detail-item.correct { border-color: #10b981; background: #ecfdf5; }
-        .detail-item.wrong { border-color: #ef4444; background: #fef2f2; }
+        .stat-box h4 { font-size: 24px; color: #1a1a2e; margin-bottom: 4px; }
+        .stat-box p { font-size: 13px; color: #6b7280; }
         
-        .detail-item h4 {
-            font-size: 15px;
-            margin-bottom: 8px;
+        .locked-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            z-index: 1000;
         }
         
-        .detail-item.correct h4 { color: #059669; }
-        .detail-item.wrong h4 { color: #dc2626; }
+        .locked-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+        }
         
-        .detail-item p { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
-        .detail-item p strong { color: #374151; }
+        .locked-content i { font-size: 48px; color: #dc2626; margin-bottom: 16px; }
+        .locked-content h3 { margin-bottom: 12px; color: #1a1a2e; }
+        .locked-content p { color: #6b7280; margin-bottom: 20px; }
         
-        .detail-item .your-answer { color: #ef4444; }
-        .detail-item .correct-answer { color: #10b981; }
-        
-        /* Alert */
-        .alert {
-            padding: 20px 24px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
+        .btn-back {
+            display: inline-flex;
             align-items: center;
-            gap: 12px;
-        }
-        
-        .alert-warning { background: #fffbeb; color: #92400e; border: 2px solid #fcd34d; }
-        .alert-info { background: #eff6ff; color: #1e40af; border: 2px solid #93c5fd; }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .result-stats { grid-template-columns: 1fr; }
-            .exam-header { position: relative; }
+            gap: 8px;
+            padding: 12px 24px;
+            background: #6b7280;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
-<?php
-date_default_timezone_set('Asia/Ho_Chi_Minh');
-include_once("Model/mTracNghiem.php");
-
-$model = new TracNghiemModel();
-$model->ketnoi();
-
-$id_bttracnghiem = isset($_REQUEST['lambai']) ? $_REQUEST['lambai'] : 0;
-$bm = isset($_REQUEST['bm']) ? $_REQUEST['bm'] : '';
-$id_sinhvien = isset($_REQUEST['idsv']) ? $_REQUEST['idsv'] : 0;
-
-// Lấy thông tin bài tập
-$sql_bt = "SELECT * FROM baitap_tracnghiem WHERE id_bttracnghiem = '$id_bttracnghiem'";
-$qr_bt = mysql_query($sql_bt);
-$bai_tap = mysql_fetch_assoc($qr_bt);
-
-// Kiểm tra đã nộp bài chưa
-$sql_nop = "SELECT * FROM nopbai_tracnghiem WHERE id_bttracnghiem = '$id_bttracnghiem' AND id_sinhvien = '$id_sinhvien'";
-$qr_nop = mysql_query($sql_nop);
-$da_nop = mysql_fetch_assoc($qr_nop);
-
-// Xử lý nộp bài
-if(isset($_POST['nop_bai'])) {
-    $dap_an = $_POST['dap_an'];
-    
-    // Lấy đáp án đúng và tính điểm
-    $sql_cauhoi = "SELECT * FROM cauhoi_tracnghiem WHERE id_bttracnghiem = '$id_bttracnghiem'";
-    $qr_cauhoi = mysql_query($sql_cauhoi);
-    
-    $socaudung = 0;
-    $tongcau = mysql_num_rows($qr_cauhoi);
-    
-    mysql_data_seek($qr_cauhoi, 0);
-    while($cauhoi = mysql_fetch_assoc($qr_cauhoi)) {
-        // Lấy đáp án đúng
-        $sql_dung = "SELECT id_dapan FROM dapan_tracnghiem WHERE id_cauhoi = '".$cauhoi['id_cauhoi']."' AND ladapan_dung = 1";
-        $qr_dung = mysql_query($sql_dung);
-        $dong = mysql_fetch_assoc($qr_dung);
-        
-        $dapan_chon = isset($dap_an[$cauhoi['id_cauhoi']]) ? $dap_an[$cauhoi['id_cauhoi']] : 0;
-        
-        if($dapan_chon == $dong['id_dapan']) {
-            $socaudung++;
-        }
-    }
-    
-    $diem = round($socaudung * $bai_tap['diemmotcau'], 2);
-    $thoigian_nop = date('Y-m-d H:i:s');
-    
-    // Xóa bài cũ nếu có
-    if($da_nop) {
-        mysql_query("DELETE FROM chitiet_tracnghiem WHERE id_nopbai = '".$da_nop['id_nopbai']."'");
-        mysql_query("DELETE FROM nopbai_tracnghiem WHERE id_nopbai = '".$da_nop['id_nopbai']."'");
-    }
-    
-    // Thêm bài nộp mới
-    $sql_them = "INSERT INTO nopbai_tracnghiem (id_bttracnghiem, id_sinhvien, diem, socautraloi_dung, thoigian_nop, trangthai) 
-                 VALUES ('$id_bttracnghiem', '$id_sinhvien', '$diem', '$socaudung', '$thoigian_nop', 'daday')";
-    mysql_query($sql_them);
-    $id_nopbai = mysql_insert_id();
-    
-    // Lưu chi tiết
-    mysql_data_seek($qr_cauhoi, 0);
-    while($cauhoi = mysql_fetch_assoc($qr_cauhoi)) {
-        $sql_dung = "SELECT id_dapan FROM dapan_tracnghiem WHERE id_cauhoi = '".$cauhoi['id_cauhoi']."' AND ladapan_dung = 1";
-        $qr_dung = mysql_query($sql_dung);
-        $dong = mysql_fetch_assoc($qr_dung);
-        
-        $dapan_chon = isset($dap_an[$cauhoi['id_cauhoi']]) ? $dap_an[$cauhoi['id_cauhoi']] : 0;
-        $dung_sai = ($dapan_chon == $dong['id_dapan']) ? 1 : 0;
-        
-        mysql_query("INSERT INTO chitiet_tracnghiem (id_nopbai, id_cauhoi, id_dapan_chon, dung_sai) 
-                     VALUES ('$id_nopbai', '".$cauhoi['id_cauhoi']."', '$dapan_chon', '$dung_sai')");
-    }
-    
-    // Lấy lại kết quả để hiển thị
-    $qr_nop = mysql_query($sql_nop);
-    $da_nop = mysql_fetch_assoc($qr_nop);
-    $show_result = true;
-}
-
-// Lấy danh sách câu hỏi
-$sql_ds = "SELECT * FROM cauhoi_tracnghiem WHERE id_bttracnghiem = '$id_bttracnghiem' ORDER BY id_cauhoi";
-$qr_ds = mysql_query($sql_ds);
-$tong_cau = mysql_num_rows($qr_ds);
-
-// Kiểm tra thời gian
-$now = time();
-$deadline = strtotime($bai_tap['ketthucnop']);
-$start = strtotime($bai_tap['batdaunop']);
-$isExpired = $now > $deadline;
-$isPending = $now < $start;
-?>
-
-<div class="exam-container">
-    <?php if(isset($show_result) && $show_result): ?>
-    <!-- KẾT QUẢ -->
-    <?php 
-    $diem = $da_nop['diem'];
-    $socaudung = $da_nop['socautraloi_dung'];
-    $tongcau = $tong_cau;
-    
-    // Xếp loại
-    if($diem >= 9) { $result_class = 'excellent'; $result_text = 'Xuất sắc!'; }
-    elseif($diem >= 7) { $result_class = 'good'; $result_text = 'Tốt lắm!'; }
-    elseif($diem >= 5) { $result_class = 'average'; $result_text = 'Khá!'; }
-    else { $result_class = 'poor'; $result_text = 'Cần cố gắng hơn!'; }
-    ?>
-    
-    <div class="result-card">
-        <div class="result-icon <?php echo $result_class; ?>">
-            <?php if($result_class == 'excellent'): ?>
-            <i class="fas fa-trophy"></i>
-            <?php elseif($result_class == 'good'): ?>
-            <i class="fas fa-star"></i>
-            <?php elseif($result_class == 'average'): ?>
-            <i class="fas fa-thumbs-up"></i>
-            <?php else: ?>
-            <i class="fas fa-book"></i>
-            <?php endif; ?>
-        </div>
-        
-        <div class="result-score"><?php echo $diem; ?></div>
-        <div class="result-label"><?php echo $result_text; ?></div>
-        
-        <div class="result-stats">
-            <div class="stat-item correct">
-                <h4><?php echo $socaudung; ?></h4>
-                <p>Câu đúng</p>
-            </div>
-            <div class="stat-item wrong">
-                <h4><?php echo $tongcau - $socaudung; ?></h4>
-                <p>Câu sai</p>
-            </div>
-            <div class="stat-item total">
-                <h4><?php echo $tongcau; ?></h4>
-                <p>Tổng câu</p>
-            </div>
-        </div>
-        
-        <div style="margin-top: 24px;">
-            <a href="cths.php?bm=<?php echo $bm; ?>#bt" class="nav-btn submit">
-                <i class="fas fa-home"></i> Quay Về Trang Chủ
-            </a>
-        </div>
-        
-        <!-- Chi tiết kết quả -->
-        <div class="result-detail">
-            <h3><i class="fas fa-list-check"></i> Chi Tiết Kết Quả</h3>
-            <?php
-            $sql_chitiet = "SELECT ct.*, ch.noidung as cauhoi, ch.dokho,
-                            (SELECT noidung FROM dapan_tracnghiem WHERE id_cauhoi = ch.id_cauhoi AND ladapan_dung = 1) as dapan_dung
-                            FROM chitiet_tracnghiem ct
-                            JOIN cauhoi_tracnghiem ch ON ct.id_cauhoi = ch.id_cauhoi
-                            WHERE ct.id_nopbai = '".$da_nop['id_nopbai']."'";
-            $qr_chitiet = mysql_query($sql_chitiet);
-            $stt = 1;
-            while($ct = mysql_fetch_assoc($qr_chitiet)):
-                $sql_da_chon = "SELECT noidung FROM dapan_tracnghiem WHERE id_dapan = '".$ct['id_dapan_chon']."'";
-                $qr_da_chon = mysql_query($sql_da_chon);
-                $da_chon = mysql_fetch_assoc($qr_da_chon);
-            ?>
-            <div class="detail-item <?php echo $ct['dung_sai'] ? 'correct' : 'wrong'; ?>">
-                <h4>
-                    <span style="background: <?php echo $ct['dung_sai'] ? '#10b981' : '#ef4444'; ?>; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
-                        <?php echo $stt++; ?>
-                    </span>
-                    <?php echo $ct['cauhoi']; ?>
-                </h4>
-                <?php if($ct['dung_sai']): ?>
-                <p><i class="fas fa-check-circle" style="color: #10b981;"></i> <strong>Đáp án đúng:</strong> <?php echo $ct['dapan_dung']; ?></p>
-                <?php else: ?>
-                <p><i class="fas fa-times-circle" style="color: #ef4444;"></i> <strong class="your-answer">Bạn chọn:</strong> <?php echo $da_chon ? $da_chon['noidung'] : 'Chưa trả lời'; ?></p>
-                <p><i class="fas fa-check-circle" style="color: #10b981;"></i> <strong class="correct-answer">Đáp án đúng:</strong> <?php echo $ct['dapan_dung']; ?></p>
-                <?php endif; ?>
-            </div>
-            <?php endwhile; ?>
-        </div>
-    </div>
-    
-    <?php elseif($isExpired): ?>
-    <!-- HẾT HẠN -->
-    <div class="result-card">
-        <div class="result-icon poor">
-            <i class="fas fa-clock"></i>
-        </div>
-        <h2 style="color: #dc2626; margin-bottom: 16px;">Đã Hết Hạn Nộp Bài</h2>
-        <p style="color: #6b7280; margin-bottom: 24px;">Thời gian nộp bài đã kết thúc. Bạn không thể nộp bài được nữa.</p>
-        <a href="cths.php?bm=<?php echo $bm; ?>#bt" class="nav-btn prev">
-            <i class="fas fa-arrow-left"></i> Quay Về
+<?php if($isPending): ?>
+<div class="locked-overlay">
+    <div class="locked-content">
+        <i class="fas fa-hourglass-half"></i>
+        <h3>Chưa Đến Giờ Làm Bài</h3>
+        <p>Bài kiểm tra sẽ mở lúc: <strong><?php echo date('d/m/Y H:i', strtotime($batdau)); ?></strong></p>
+        <a href="ctmonhoc.php?bm=<?php echo $bm; ?>&is=<?php echo $is; ?>&ihp=<?php echo $ihp; ?>&il=<?php echo $il; ?>&tn" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Quay lại
         </a>
     </div>
-    
-    <?php elseif($isPending): ?>
-    <!-- CHƯA MỞ -->
-    <div class="result-card">
-        <div class="result-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff;">
-            <i class="fas fa-hourglass-half"></i>
-        </div>
-        <h2 style="color: #d97706; margin-bottom: 16px;">Bài Tập Chưa Mở</h2>
-        <p style="color: #6b7280; margin-bottom: 16px;">Bài tập sẽ được mở vào: <strong><?php echo date('d/m/Y H:i', $start); ?></strong></p>
-        <a href="cths.php?bm=<?php echo $bm; ?>#bt" class="nav-btn prev">
-            <i class="fas fa-arrow-left"></i> Quay Về
+</div>
+<?php elseif(($isExpired && !$da_nop)): ?>
+<div class="locked-overlay">
+    <div class="locked-content">
+        <i class="fas fa-clock"></i>
+        <h3>Đã Hết Giờ Làm Bài</h3>
+        <p>Thời gian làm bài đã kết thúc lúc: <strong><?php echo date('d/m/Y H:i', strtotime($ketthuc)); ?></strong></p>
+        <a href="ctmonhoc.php?bm=<?php echo $bm; ?>&is=<?php echo $is; ?>&ihp=<?php echo $ihp; ?>&il=<?php echo $il; ?>&tn" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Quay lại
         </a>
     </div>
-    
-    <?php elseif($tong_cau == 0): ?>
-    <!-- CHƯA CÓ CÂU HỎI -->
-    <div class="result-card">
-        <div class="result-icon" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: #fff;">
-            <i class="fas fa-inbox"></i>
-        </div>
-        <h2 style="color: #6b7280; margin-bottom: 16px;">Bài Tập Đang Được Cập Nhật</h2>
-        <p style="color: #6b7280; margin-bottom: 24px;">Giảng viên chưa thêm câu hỏi cho bài tập này.</p>
-        <a href="cths.php?bm=<?php echo $bm; ?>#bt" class="nav-btn prev">
-            <i class="fas fa-arrow-left"></i> Quay Về
-        </a>
+</div>
+<?php else: ?>
+
+<div class="header-bar">
+    <h2><i class="fas fa-file-alt"></i> <?php echo htmlspecialchars($bai_tap['tieude']); ?></h2>
+    <?php if($dang_lam_bai): ?>
+    <div class="timer-box" id="timerBox">
+        <i class="fas fa-clock"></i>
+        <span id="timerDisplay"><?php echo gmdate('H:i:s', $thoigian_conlai); ?></span>
     </div>
-    
-    <?php elseif($da_nop): ?>
-    <!-- ĐÃ NỘP - XEM LẠI -->
-    <?php 
-    $diem = $da_nop['diem'];
-    $socaudung = $da_nop['socautraloi_dung'];
-    $tongcau = $tong_cau;
-    
-    if($diem >= 9) { $result_class = 'excellent'; $result_text = 'Xuất sắc!'; }
-    elseif($diem >= 7) { $result_class = 'good'; $result_text = 'Tốt lắm!'; }
-    elseif($diem >= 5) { $result_class = 'average'; $result_text = 'Khá!'; }
-    else { $result_class = 'poor'; $result_text = 'Cần cố gắng hơn!'; }
-    ?>
-    
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle"></i>
-        <span>Bạn đã nộp bài này rồi. Thời gian nộp: <?php echo date('d/m/Y H:i', strtotime($da_nop['thoigian_nop'])); ?></span>
-    </div>
-    
-    <div class="result-card">
-        <div class="result-icon <?php echo $result_class; ?>">
-            <?php if($result_class == 'excellent'): ?>
-            <i class="fas fa-trophy"></i>
-            <?php elseif($result_class == 'good'): ?>
-            <i class="fas fa-star"></i>
-            <?php elseif($result_class == 'average'): ?>
-            <i class="fas fa-thumbs-up"></i>
-            <?php else: ?>
-            <i class="fas fa-book"></i>
-            <?php endif; ?>
-        </div>
-        
-        <div class="result-score"><?php echo $diem; ?></div>
-        <div class="result-label"><?php echo $result_text; ?></div>
-        
-        <div class="result-stats">
-            <div class="stat-item correct">
-                <h4><?php echo $socaudung; ?></h4>
-                <p>Câu đúng</p>
-            </div>
-            <div class="stat-item wrong">
-                <h4><?php echo $tongcau - $socaudung; ?></h4>
-                <p>Câu sai</p>
-            </div>
-            <div class="stat-item total">
-                <h4><?php echo $tongcau; ?></h4>
-                <p>Tổng câu</p>
-            </div>
-        </div>
-        
-        <div style="margin-top: 24px;">
-            <a href="cths.php?bm=<?php echo $bm; ?>#bt" class="nav-btn submit">
-                <i class="fas fa-home"></i> Quay Về Trang Chủ
-            </a>
-        </div>
-    </div>
-    
-    <?php else: ?>
-    <!-- LÀM BÀI -->
-    <form action="" method="POST" id="examForm">
-        <div class="exam-header">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-                <div>
-                    <h1><i class="fas fa-pencil-alt"></i> <?php echo $bai_tap['tieude']; ?></h1>
-                    <p><?php echo $bai_tap['mota'] ? $bai_tap['mota'] : 'Làm bài ngay để đạt kết quả tốt nhất!'; ?></p>
-                </div>
-                <div class="timer-box" id="timerBox">
-                    <i class="fas fa-clock"></i>
-                    <span id="timer"><?php echo $bai_tap['thoigianlambai']; ?>:00</span>
-                </div>
-            </div>
-            
-            <div class="progress-info">
-                <div class="progress-item">
-                    <i class="fas fa-question-circle"></i>
-                    <span><?php echo $tong_cau; ?> câu hỏi</span>
-                </div>
-                <div class="progress-item">
-                    <i class="fas fa-star"></i>
-                    <span>Điểm tối đa: <?php echo $tong_cau * $bai_tap['diemmotcau']; ?></span>
-                </div>
-                <div class="progress-item">
-                    <i class="fas fa-bullseye"></i>
-                    <span><?php echo $bai_tap['diemmotcau']; ?> điểm/câu</span>
-                </div>
-            </div>
-        </div>
-        
-        <?php $stt = 1; while($cauhoi = mysql_fetch_assoc($qr_ds)): ?>
-        <?php
-            // Lấy đáp án
-            $sql_da = "SELECT * FROM dapan_tracnghiem WHERE id_cauhoi = '".$cauhoi['id_cauhoi']."'";
-            $qr_da = mysql_query($sql_da);
-        ?>
-        <div class="question-card" id="question-<?php echo $cauhoi['id_cauhoi']; ?>">
-            <div class="question-text">
-                <span class="question-number"><?php echo $stt++; ?></span>
-                <?php echo $cauhoi['noidung']; ?>
-            </div>
-            
-            <div class="answers-list">
-                <?php 
-                $labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-                $idx = 0;
-                while($dapan = mysql_fetch_assoc($qr_da)): 
-                ?>
-                <label class="answer-option" onclick="selectAnswer(this, <?php echo $cauhoi['id_cauhoi']; ?>, <?php echo $dapan['id_dapan']; ?>)">
-                    <input type="radio" name="dap_an[<?php echo $cauhoi['id_cauhoi']; ?>]" value="<?php echo $dapan['id_dapan']; ?>" required>
-                    <span class="option-letter"><?php echo $labels[$idx]; ?></span>
-                    <span class="option-text"><?php echo $dapan['noidung']; ?></span>
-                </label>
-                <?php $idx++; endwhile; ?>
-            </div>
-        </div>
-        <?php endwhile; ?>
-        
-        <div class="exam-nav">
-            <a href="cths.php?bm=<?php echo $bm; ?>#bt" class="nav-btn prev">
-                <i class="fas fa-arrow-left"></i> Quay Về
-            </a>
-            <button type="submit" name="nop_bai" class="nav-btn submit" onclick="return confirm('Bạn có chắc muốn nộp bài?');">
-                <i class="fas fa-paper-plane"></i> Nộp Bài
-            </button>
-        </div>
-    </form>
     <?php endif; ?>
 </div>
 
+<div class="main-container">
+    <?php if($da_nop || $xem): ?>
+    <!-- HIEN THI KET QUA -->
+    <?php
+    $sql_ch = "SELECT * FROM cauhoi_tracnghiem WHERE id_bttracnghiem = '$qtn'";
+    $qr_ch = mysql_query($sql_ch);
+    $tong_cau = mysql_num_rows($qr_ch);
+    $diem = $baida['diem'];
+    $socaudung = $baida['socautraloi_dung'];
+    ?>
+    <div class="result-card">
+        <div class="result-icon info">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <h2 style="margin-bottom: 8px;">Kết Quả Bài Làm</h2>
+        <div class="result-score"><?php echo $diem; ?> điểm</div>
+        <div class="result-label">Điểm tối đa: <?php echo $bai_tap['soluongcauhoi'] * $bai_tap['diemmotcau']; ?> điểm</div>
+        
+        <div class="result-stats">
+            <div class="stat-box">
+                <h4><?php echo $socaudung; ?></h4>
+                <p>Câu Đúng</p>
+            </div>
+            <div class="stat-box">
+                <h4><?php echo $tong_cau - $socaudung; ?></h4>
+                <p>Câu Sai</p>
+            </div>
+            <div class="stat-box">
+                <h4><?php echo $tong_cau; ?></h4>
+                <p>Tổng Câu</p>
+            </div>
+        </div>
+        
+        <a href="ctmonhoc.php?bm=<?php echo $bm; ?>&is=<?php echo $is; ?>&ihp=<?php echo $ihp; ?>&il=<?php echo $il; ?>&tnhistory" class="btn btn-primary" style="text-decoration: none;">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+    </div>
+    <?php endif; ?>
+
+    <?php
+    // Lấy câu hỏi
+    $sql_cauhoi = "SELECT * FROM cauhoi_tracnghiem WHERE id_bttracnghiem = '$qtn' ORDER BY RAND() LIMIT ".$bai_tap['soluongcauhoi'];
+    $qr_cauhoi = mysql_query($sql_cauhoi);
+    $cau_hoi = array();
+    while($ch = mysql_fetch_assoc($qr_cauhoi)) {
+        $sql_da = "SELECT * FROM dapan_tracnghiem WHERE id_cauhoi = '".$ch['id_cauhoi']."' ORDER BY RAND()";
+        $qr_da = mysql_query($sql_da);
+        $ch['dap_an'] = array();
+        while($da = mysql_fetch_assoc($qr_da)) {
+            $ch['dap_an'][] = $da;
+        }
+        $cau_hoi[] = $ch;
+    }
+    
+    // Lấy đáp án đã chọn nếu đã nộp
+    $dap_an_da_chon = array();
+    if($da_nop) {
+        $sql_ct = "SELECT * FROM chitiet_tracnghiem WHERE id_nopbai = '".$baida['id_nopbai']."'";
+        $qr_ct = mysql_query($sql_ct);
+        while($ct = mysql_fetch_assoc($qr_ct)) {
+            $dap_an_da_chon[$ct['id_cauhoi']] = $ct['id_dapan_chon'];
+        }
+    }
+    ?>
+    
+    <?php if($dang_lam_bai): ?>
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+        <div class="progress-info">
+            <span id="answeredCount">0</span> / <?php echo count($cau_hoi); ?> câu đã trả lời
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Questions -->
+    <form action="" method="POST" id="quizForm">
+        <?php foreach($cau_hoi as $index => $cau): ?>
+        <div class="question-card" id="question-<?php echo $index; ?>">
+            <div class="question-header">
+                <div class="question-number"><?php echo $index + 1; ?></div>
+                <div class="question-text"><?php echo htmlspecialchars($cau['noidung']); ?></div>
+            </div>
+            
+            <div class="answer-options">
+                <?php 
+                $labels = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H');
+                $da_chon = isset($dap_an_da_chon[$cau['id_cauhoi']]) ? $dap_an_da_chon[$cau['id_cauhoi']] : null;
+                
+                foreach($cau['dap_an'] as $idx => $da): 
+                    $is_selected = ($da_chon == $da['id_dapan']);
+                    $is_correct = $da['ladapan_dung'];
+                    
+                    $class = 'answer-option';
+                    $your_choice = '';
+                    if($da_nop || $xem) {
+                        if($is_correct) $class .= ' correct';
+                        elseif($is_selected) $class .= ' incorrect';
+                        if($is_selected) $your_choice = '<span style="background: #3b82f6; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-left: 8px;">Đáp án của bạn</span>';
+                    } elseif($is_selected) {
+                        $class .= ' selected';
+                    }
+                ?>
+                <div class="<?php echo $class; ?>" onclick="<?php echo ($dang_lam_bai) ? "selectAnswer(".$cau['id_cauhoi'].", ".$da['id_dapan'].", ".$index.")" : ""; ?>">
+                    <input type="radio" name="cau_<?php echo $cau['id_cauhoi']; ?>" 
+                           value="<?php echo $da['id_dapan']; ?>" 
+                           <?php echo $is_selected ? 'checked' : ''; ?>
+                           <?php echo ($da_nop || $xem || !$dang_lam_bai) ? 'disabled' : ''; ?>
+                           class="answer-radio">
+                    <span class="answer-label"><?php echo $labels[$idx]; ?>. <?php echo htmlspecialchars($da['noidung']); ?><?php echo $your_choice; ?></span>
+                    <?php if($da_nop || $xem): ?>
+                    <div class="answer-icon <?php echo $is_correct ? 'correct' : 'incorrect'; ?>">
+                        <i class="fas fa-<?php echo $is_correct ? 'check' : 'times'; ?>"></i>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        
+        <?php if($dang_lam_bai): ?>
+        <div class="nav-buttons">
+            <a href="ctmonhoc.php?bm=<?php echo $bm; ?>&is=<?php echo $is; ?>&ihp=<?php echo $ihp; ?>&il=<?php echo $il; ?>&tn" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+            <button type="submit" name="nop_bai" class="btn btn-success" onclick="return confirmSubmit()">
+                <i class="fas fa-paper-plane"></i> Nộp Bài
+            </button>
+        </div>
+        <?php elseif(!$da_nop && !$xem): ?>
+        <div class="nav-buttons" style="justify-content: center;">
+            <a href="ctmonhoc.php?bm=<?php echo $bm; ?>&is=<?php echo $is; ?>&ihp=<?php echo $ihp; ?>&il=<?php echo $il; ?>&tn" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+        <?php endif; ?>
+    </form>
+</div>
+
+<?php endif; ?>
+
 <script>
+<?php if($dang_lam_bai): ?>
 // Timer
-let timeLeft = <?php echo $bai_tap['thoigianlambai'] * 60; ?>;
-const timerBox = document.getElementById('timerBox');
+var timeLeft = <?php echo $thoigian_conlai; ?>;
+var timerBox = document.getElementById('timerBox');
+var isSubmitted = false;
+
+function autoSubmit() {
+    if(isSubmitted) return;
+    isSubmitted = true;
+    
+    var input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'nop_bai';
+    input.value = '1';
+    document.getElementById('quizForm').appendChild(input);
+    
+    document.getElementById('quizForm').submit();
+}
 
 function updateTimer() {
     if(timeLeft <= 0) {
-        document.getElementById('examForm').submit();
+        autoSubmit();
         return;
     }
     
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    document.getElementById('timer').textContent = 
-        (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+    var hours = Math.floor(timeLeft / 3600);
+    var minutes = Math.floor((timeLeft % 3600) / 60);
+    var seconds = timeLeft % 60;
     
-    if(timeLeft <= 300) {
+    document.getElementById('timerDisplay').textContent = 
+        (hours > 0 ? hours + ':' : '') + 
+        String(minutes).padStart(2, '0') + ':' + 
+        String(seconds).padStart(2, '0');
+    
+    if(timeLeft <= 60) {
         timerBox.classList.add('warning');
     }
     
     timeLeft--;
+    setTimeout(updateTimer, 1000);
 }
 
-setInterval(updateTimer, 1000);
+updateTimer();
 
-// Select answer
-function selectAnswer(element, questionId, answerId) {
-    // Remove selected from all options in this question
-    const parent = element.parentElement;
-    const options = parent.querySelectorAll('.answer-option');
-    options.forEach(opt => opt.classList.remove('selected'));
+// Progress tracking
+var answeredCount = 0;
+var totalQuestions = <?php echo count($cau_hoi); ?>;
+var selectedAnswers = {};
+
+function selectAnswer(questionId, answerId, index) {
+    var radios = document.querySelectorAll('input[name="cau_' + questionId + '"]');
+    radios.forEach(function(radio) {
+        radio.checked = false;
+        radio.closest('.answer-option').classList.remove('selected');
+    });
     
-    // Add selected to clicked option
-    element.classList.add('selected');
+    document.querySelector('input[name="cau_' + questionId + '"][value="' + answerId + '"]').checked = true;
+    document.querySelector('input[name="cau_' + questionId + '"][value="' + answerId + '"]').closest('.answer-option').classList.add('selected');
     
-    // Check radio
-    const radio = element.querySelector('input[type="radio"]');
-    radio.checked = true;
+    selectedAnswers[questionId] = answerId;
+    updateProgress();
 }
+
+function updateProgress() {
+    answeredCount = Object.keys(selectedAnswers).length;
+    document.getElementById('answeredCount').textContent = answeredCount;
+    var percent = (answeredCount / totalQuestions) * 100;
+    document.getElementById('progressFill').style.width = percent + '%';
+}
+
+function confirmSubmit() {
+    var unanswered = totalQuestions - answeredCount;
+    if(unanswered > 0) {
+        return confirm('Bạn còn ' + unanswered + ' câu chưa trả lời. Bạn có chắc muốn nộp bài?');
+    }
+    return confirm('Bạn có chắc muốn nộp bài?');
+}
+
+// Warn before leaving
+window.addEventListener('beforeunload', function(e) {
+    if(Object.keys(selectedAnswers).length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+<?php endif; ?>
 </script>
 
-<?php $model->dongketnoi(); ?>
 </body>
 </html>

@@ -2888,7 +2888,19 @@ a:hover {
             <!-- Navigation Tabs -->
             <div class="header-nav">
                 <div class="nav-tabs-custom">
-                    <?php if(isset($_REQUEST['gd'])){ ?>
+                    <?php 
+                    $is_qtn = isset($_REQUEST['qtnmanage']);
+                    $is_gd = isset($_REQUEST['gd']);
+                    $is_ds = isset($_REQUEST['ds']);
+                    $is_qld = isset($_REQUEST['qld']);
+                    ?>
+                    
+                    <?php if($is_qtn){ ?>
+                    <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd" class="nav-tab">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>HP Giảng Dạy</span>
+                    </a>
+                    <?php } elseif($is_gd){ ?>
                     <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd" class="nav-tab active">
                         <i class="fas fa-graduation-cap"></i>
                         <span>HP Giảng Dạy</span>
@@ -2900,7 +2912,7 @@ a:hover {
                     </a>
                     <?php } ?>
                     
-                    <?php if(isset($_REQUEST['ds'])){ ?>
+                    <?php if($is_ds){ ?>
                     <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&ds" class="nav-tab active">
                         <i class="fas fa-users"></i>
                         <span>Danh Sách SV</span>
@@ -2912,7 +2924,7 @@ a:hover {
                     </a>
                     <?php } ?>
                     
-                    <?php if(isset($_REQUEST['qld'])){ ?>
+                    <?php if($is_qld){ ?>
                     <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&qld" class="nav-tab active">
                         <i class="fas fa-chart-line"></i>
                         <span>Quản Lý Điểm</span>
@@ -2924,7 +2936,7 @@ a:hover {
                     </a>
                     <?php } ?>
                     
-                    <?php if(isset($_REQUEST['gd']) && isset($_REQUEST['qtnmanage'])){ ?>
+                    <?php if($is_qtn){ ?>
                     <a href="cthpgv.php?bm=<?php echo $_REQUEST['bm'] ?>&&ig=<?php echo $_REQUEST['ig'] ?>&&ihp=<?php echo $_REQUEST['ihp'] ?>&&il=<?php echo $_REQUEST['il'] ?>&&gd=1&&qtnmanage=1#qtn" class="nav-tab active">
                         <i class="fas fa-question-circle"></i>
                         <span>Bài Trắc Nghiệm</span>

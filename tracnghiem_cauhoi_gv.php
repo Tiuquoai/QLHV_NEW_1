@@ -1,3 +1,34 @@
+<?php
+session_start();
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+
+if(!isset($_REQUEST['bm'])){
+    echo header("refresh:0,url='index.php'");
+    exit;
+}
+include_once("Model/mKetNoiGV.php");
+$p=new ketnoiGV();
+$kn=$p->ketnoi($ketnoi);
+$ma=$_REQUEST['bm'];
+$sql="select * from user where user_code='$ma'";
+$qr=mysql_query($sql);
+$r=mysql_fetch_assoc($qr);
+$ma=$r['user_code'];
+$mk=$r['matkhau'];
+$k=$_SESSION['mk'];
+$m=$_SESSION['ma'];
+if($k != $mk || $m != $ma){
+    echo header("refresh:0,url='index.php'");
+    exit;
+}
+
+$qtn = isset($_REQUEST['qtn']) ? intval($_REQUEST['qtn']) : 0;
+$bm = isset($_REQUEST['bm']) ? $_REQUEST['bm'] : '';
+$ig = isset($_REQUEST['ig']) ? $_REQUEST['ig'] : '';
+$ihp = isset($_REQUEST['ihp']) ? $_REQUEST['ihp'] : '';
+$il = isset($_REQUEST['il']) ? $_REQUEST['il'] : '';
+$gd = isset($_REQUEST['gd']) ? $_REQUEST['gd'] : '';
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -449,6 +480,9 @@ $tong_cauhoi = mysql_num_rows($qr_ds);
             </span>
             <a href="cthpgv.php?bm=<?php echo $bm; ?>&&ig=<?php echo $ig; ?>&&ihp=<?php echo $ihp; ?>&&il=<?php echo $il; ?>&&gd=1&&qtnmanage=1#qtn" class="btn btn-primary">
                 <i class="fas fa-arrow-left"></i> Quay Lại
+            </a>
+            <a href="import_cauhoi_excel.php?qtn=<?php echo $qtn; ?>&&bm=<?php echo $bm; ?>&&ig=<?php echo $ig; ?>&&ihp=<?php echo $ihp; ?>&&il=<?php echo $il; ?>&&gd=<?php echo $gd; ?>" class="btn btn-secondary" style="background: #f59e0b; color: #fff;">
+                <i class="fas fa-file-import"></i> Import Excel
             </a>
             <button class="btn btn-success" onclick="openModal('addModal')">
                 <i class="fas fa-plus"></i> Thêm Câu Hỏi
