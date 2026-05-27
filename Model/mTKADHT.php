@@ -434,6 +434,133 @@ function xoahp1(){
 	}
 }
 
+// Thêm sinh viên mới bằng form
+function themSV(){
+    $p=new ketnoiad($ketnoi);
+    if($p->ketnoi($ketnoi)){
+        if(isset($_POST['them_sinhvien'])){
+            $tentk = $_POST['tentk'];
+            $mk = md5($_POST['matkhau']);
+            $email = $_POST['email'];
+            $cccd = $_POST['cccd'];
+            $anh = $_POST['anh'];
+            $tensv = $_POST['tensv'];
+            $mssv = $_POST['mssv'];
+            $gioitinh = $_POST['gioitinh'];
+            $ngaysinh = $_POST['ngaysinh'];
+            $sdt = $_POST['sdt'];
+            $ngaycap = $_POST['ngaycap'];
+            $noicap = $_POST['noicap'];
+            $diachi = $_POST['diachi'];
+            $hokhau = $_POST['hokhau'];
+            $ngayvt = $_POST['ngayvt'];
+            $khoa = $_POST['khoa'];
+            $lop = $_POST['lop'];
+            $csdt = $_POST['csdt'];
+            $trangthai = $_POST['trangthai'];
+            $id_cn = $_POST['id_chuyennganh'];
+            $ma1 = md5($mssv);
+            
+            // Kiểm tra trùng mã
+            $sql_check = "select * from user where user_code='$ma1'";
+            $qr_check = mysql_query($sql_check);
+            $sql_check1 = "select * from sinhvien where masosinhvien='$mssv'";
+            $qr_check1 = mysql_query($sql_check1);
+            
+            if(mysql_num_rows($qr_check) > 0 || mysql_num_rows($qr_check1) > 0){
+                echo "<script>alert('Mã số sinh viên đã tồn tại trong hệ thống!');</script>";
+                return false;
+            }
+            
+            // Insert vào bảng user
+            $sql = "insert into user(user_code, tenuser, matkhau, vaitro, email, cccd, anh) 
+                    values ('$ma1', '$tentk', '$mk', 0, '$email', '$cccd', '$anh')";
+            $qr = mysql_query($sql);
+            
+            // Insert vào bảng sinhvien
+            $sql2 = "insert into sinhvien(user_id) select user_id from user where user_code='$ma1'";
+            $qr2 = mysql_query($sql2);
+            
+            $sql3 = "update sinhvien set tensinhvien='$tensv', masosinhvien='$mssv', gioitinh='$gioitinh', 
+                    ngaysinh='$ngaysinh', sdt='$sdt', ngaycap='$ngaycap', noicap='$noicap', 
+                    diachilienhe='$diachi', hokhauthuongtru='$hokhau', ngayvaotruong='$ngayvt', 
+                    khoa='$khoa', lopCN='$lop', cosodaotao='$csdt', trangthai='$trangthai', 
+                    id_chuyennganh='$id_cn' where user_id=(select user_id from user where user_code='$ma1')";
+            $qr3 = mysql_query($sql3);
+            
+            if($qr && $qr2 && $qr3){
+                echo "<script>alert('Thêm sinh viên thành công!');</script>";
+                return true;
+            } else {
+                echo "<script>alert('Lỗi khi thêm sinh viên!');</script>";
+                return false;
+            }
+        }
+    }
+}
+
+// Thêm giảng viên mới bằng form
+function themGV(){
+    $p=new ketnoiad($ketnoi);
+    if($p->ketnoi($ketnoi)){
+        if(isset($_POST['them_giangvien'])){
+            $tentk = $_POST['tentk'];
+            $mk = md5($_POST['matkhau']);
+            $email = $_POST['email'];
+            $cccd = $_POST['cccd'];
+            $anh = $_POST['anh'];
+            $tengv = $_POST['tengv'];
+            $mgv = $_POST['mgv'];
+            $gioitinh = $_POST['gioitinh'];
+            $sdt = $_POST['sdt'];
+            $diachi = $_POST['diachi'];
+            $hocvi = $_POST['hocvi'];
+            $qtct = $_POST['qtct'];
+            $csgd = $_POST['csgd'];
+            $chungchi = $_POST['chungchi'];
+            $chungchikhac = $_POST['chungchikhac'];
+            $congtrinh = $_POST['congtrinh'];
+            $id_cn = $_POST['id_chuyennganh'];
+            $ma1 = md5($mgv);
+            
+            // Kiểm tra trùng mã
+            $sql_check = "select * from user where user_code='$ma1'";
+            $qr_check = mysql_query($sql_check);
+            $sql_check1 = "select * from giangvien where magiangvien='$mgv'";
+            $qr_check1 = mysql_query($sql_check1);
+            
+            if(mysql_num_rows($qr_check) > 0 || mysql_num_rows($qr_check1) > 0){
+                echo "<script>alert('Mã giảng viên đã tồn tại trong hệ thống!');</script>";
+                return false;
+            }
+            
+            // Insert vào bảng user
+            $sql = "insert into user(user_code, tenuser, matkhau, vaitro, email, cccd, anh) 
+                    values ('$ma1', '$tentk', '$mk', 1, '$email', '$cccd', '$anh')";
+            $qr = mysql_query($sql);
+            
+            // Insert vào bảng giangvien
+            $sql2 = "insert into giangvien(user_id) select user_id from user where user_code='$ma1'";
+            $qr2 = mysql_query($sql2);
+            
+            $sql3 = "update giangvien set hotengiangvien='$tengv', magiangvien='$mgv', gioitinh='$gioitinh', 
+                    sdt='$sdt', diachi='$diachi', hocvi='$hocvi', quatrinhcongtac='$qtct', 
+                    cosogiangday='$csgd', chungchi='$chungchi', chungchikhac='$chungchikhac', 
+                    congtrinhkhoahoctieubieu='$congtrinh', id_chuyennganh='$id_cn' 
+                    where user_id=(select user_id from user where user_code='$ma1')";
+            $qr3 = mysql_query($sql3);
+            
+            if($qr && $qr2 && $qr3){
+                echo "<script>alert('Thêm giảng viên thành công!');</script>";
+                return true;
+            } else {
+                echo "<script>alert('Lỗi khi thêm giảng viên!');</script>";
+                return false;
+            }
+        }
+    }
+}
+
 }
 ?>
 </body>

@@ -360,7 +360,7 @@ document.getElementById('chatForm').addEventListener('submit', async function(e)
     
     try {
         // Call API
-        const response = await fetch('/plhv_hoai-main/chat-api.php', {
+        const response = await fetch('chat-api.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: message })

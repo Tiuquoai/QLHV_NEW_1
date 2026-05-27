@@ -1,13 +1,13 @@
 <?php
 session_start();
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 // Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
+    header('HTTP/1.1 200 OK');
     exit;
 }
 
@@ -26,19 +26,130 @@ try {
             mysql_close($ketnoi);
         }
     }
-    
+
+    // Class xu ly Chat AI - Luu va lay tin nhan
+    class mChatAI {
+        var $kn;
+
+        function mChatAI() {
+            $p = new ketnoiSV();
+            $this->kn = $p->ketnoi($ketnoi);
+        }
+
+        // Luu tin nhan vao database
+        function LuuTinNhan($user_id, $sender_type, $message_content, $student_context) {
+            if(!$this->kn) return false;
+
+            $user_id = mysql_real_escape_string($user_id);
+            $sender_type = mysql_real_escape_string($sender_type);
+            $message_content = mysql_real_escape_string($message_content);
+            $student_context = $student_context ? mysql_real_escape_string($student_context) : "NULL";
+            $created_date = date("Y-m-d H:i:s");
+
+            if ($student_context == "NULL") {
+                $sql = "INSERT INTO chat_message (user_id, sender_type, message_content, student_context, is_read, created_date)
+                        VALUES ('$user_id', '$sender_type', '$message_content', NULL, 0, '$created_date')";
+            } else {
+                $sql = "INSERT INTO chat_message (user_id, sender_type, message_content, student_context, is_read, created_date)
+                        VALUES ('$user_id', '$sender_type', '$message_content', '$student_context', 0, '$created_date')";
+            }
+            return mysql_query($sql);
+        }
+
+        // Lay lich su chat cua sinh vien
+        function LayLichSuChat($user_id, $limit) {
+            if(!$this->kn) return false;
+
+            $user_id = mysql_real_escape_string($user_id);
+            $limit = intval($limit);
+
+            $sql = "SELECT * FROM chat_message
+                    WHERE user_id = '$user_id'
+                    ORDER BY created_date DESC
+                    LIMIT $limit";
+            return mysql_query($sql);
+        }
+
+        // Lay ngữ cảnh hoc tap cua sinh vien
+        function LayContextSV($user_id) {
+            if(!$this->kn) return "";
+
+            $user_id = mysql_real_escape_string($user_id);
+
+            // Lay thong tin sinh vien
+            $sql_sv = "SELECT sv.*, u.user_code, u.email, cn.tenchuyennganh, kv.tenkhoa
+                       FROM sinhvien sv
+                       JOIN user u ON sv.user_id = u.user_id
+                       JOIN chuyennganh cn ON sv.id_chuyennganh = cn.id_chuyennganh
+                       JOIN khoavien kv ON cn.id_khoa = kv.id_khoa
+                       WHERE sv.user_id = '$user_id'";
+            $qr_sv = mysql_query($sql_sv);
+            $sv = mysql_fetch_assoc($qr_sv);
+
+            // Lay diem gan nhat
+            $diem_arr = array();
+            if ($sv) {
+                $sql_diem = "SELECT d.*, hp.tenhocphan
+                             FROM diem d
+                             JOIN hocphan hp ON d.id_hocphan = hp.id_hocphan
+                             WHERE d.id_sinhvien = '" . $sv['id_sinhvien'] . "'
+                             ORDER BY d.id_diem DESC LIMIT 5";
+                $qr_diem = mysql_query($sql_diem);
+                while($d = mysql_fetch_assoc($qr_diem)) {
+                    $diem_arr[] = $d;
+                }
+            }
+
+            // Lay khoa hoc hien tai
+            $khoahoc_arr = array();
+            if ($sv) {
+                $sql_khoahoc = "SELECT hp.tenhocphan, hp.mahocphan, l.tenlophocphan
+                                FROM hoctap h
+                                JOIN sinhvien sv2 ON h.id_sinhvien = sv2.id_sinhvien
+                                JOIN monlop m ON h.id = m.id
+                                JOIN hocphan hp ON m.id_hocphan = hp.id_hocphan
+                                JOIN lophocphan l ON m.id_lophocphan = l.id_lophocphan
+                                WHERE sv2.id_sinhvien = '" . $sv['id_sinhvien'] . "'";
+                $qr_khoahoc = mysql_query($sql_khoahoc);
+                while($kh = mysql_fetch_assoc($qr_khoahoc)) {
+                    $khoahoc_arr[] = $kh;
+                }
+            }
+
+            // Tao context JSON
+            $context = array(
+                'student_info' => $sv,
+                'scores' => $diem_arr,
+                'current_courses' => $khoahoc_arr
+            );
+
+            // PHP 5.2 khong ho tro JSON_UNESCAPED_UNICODE nen dung utf8_encode
+            return json_encode($context);
+        }
+
+        // Xoa lich su chat
+        function XoaLichSuChat($user_id) {
+            if(!$this->kn) return false;
+            $user_id = mysql_real_escape_string($user_id);
+            $sql = "DELETE FROM chat_message WHERE user_id = '$user_id'";
+            return mysql_query($sql);
+        }
+    }
+
     $p = new ketnoiSV();
     $kn = $p->ketnoi($ketnoi);
-    
-    // Get user role from session
-    $tmp = "hocsinh"; // Default to admin if session not set
-    
+
+    // Get user info from session
+    $user_id = null;
+    $tmp = "hocsinh";
+
     if (isset($_SESSION['ma']) && isset($_SESSION['mk'])) {
         $mauser = $_SESSION['ma'];
         $sql = "SELECT * FROM user WHERE user_code = '$mauser'";
         $qr = mysql_query($sql);
         if ($qr && mysql_num_rows($qr) > 0) {
             $r = mysql_fetch_assoc($qr);
+            $user_id = $r['user_id'];
             if ($r['vaitro'] == 0) {
                 $tmp = "hocsinh";
             } else if ($r['vaitro'] == 1) {
@@ -48,33 +159,32 @@ try {
             }
         }
     }
-    
+
     require './config.php';
-    
+
     // Debug mode
     ini_set('display_errors', 0);
     error_reporting(0);
     set_time_limit(0);
-    
-    // Nhận dữ liệu từ request
+
+    // Nhan du lieu tu request
     $data = json_decode(file_get_contents('php://input'), true);
-    
+
     $prompt = isset($data['prompt']) && trim($data['prompt']) !== ''
         ? trim($data['prompt'])
-        : "Nhập môn lập trình học cái gì vậy tôi sợ quá";
-    
+        : "Nhap mon lap trinh hoc cai gi vay toi so qua";
+
     // =====================
-    // ADMIN FLOW - Dùng /chat-ai endpoint
+    // ADMIN FLOW - Dung /chat-ai endpoint
     // =====================
     if ($tmp == "admin") {
         $ollamaUrl = CAL_LLM_CHAT;
-        
-        // Format đúng cho /chat-ai: {"message": "...", "role": "..."}
+
         $payload = json_encode(array(
             "message" => $prompt,
             "role" => $tmp
         ));
-        
+
         $ch1 = curl_init();
         curl_setopt($ch1, CURLOPT_URL, $ollamaUrl);
         curl_setopt($ch1, CURLOPT_POST, true);
@@ -83,30 +193,28 @@ try {
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch1, CURLOPT_TIMEOUT, 120);
         curl_setopt($ch1, CURLOPT_CONNECTTIMEOUT, 30);
-        
+
         $response1 = curl_exec($ch1);
         $httpCode1 = curl_getinfo($ch1, CURLINFO_HTTP_CODE);
         $error1 = curl_error($ch1);
-        
+
         curl_close($ch1);
-        
+
         if ($error1) {
-            echo json_encode(array('response' => "Lỗi kết nối: " . $error1));
+            echo json_encode(array('response' => "Loi ket noi: " . $error1));
             exit;
         }
-        
+
         if ($httpCode1 !== 200) {
             echo json_encode(array('response' => "HTTP Error: " . $httpCode1 . " - Response: " . substr($response1, 0, 200)));
             exit;
         }
-        
+
         $rs = json_decode($response1, true);
 
-        // Build the response text
         $responseText = "";
         $extraTables = "";
 
-        // Handle different response formats
         if (isset($rs['message'])) {
             $msgData = $rs['message'];
             $responseText = is_array($msgData) ? (isset($msgData['content']) ? $msgData['content'] : json_encode($msgData)) : $msgData;
@@ -123,21 +231,20 @@ try {
             $responseText = is_string($rs) ? $rs : json_encode($rs);
         }
 
-        // Nếu có danh sách sinh viên từ tool, format thành bảng HTML
         if (isset($rs['sinhviens']) && is_array($rs['sinhviens']) && count($rs['sinhviens']) > 0) {
             $extraTables .= '<div class="chat-sv-table-wrapper" style="margin-top:16px;">
                 <table class="chat-sv-table">
                     <thead>
                         <tr>
                             <th style="width:40px;">#</th>
-                            <th>Họ tên</th>
-                            <th>Mã SV</th>
+                            <th>Ho ten</th>
+                            <th>Ma SV</th>
                             <th style="width:65px;">GT</th>
-                            <th style="width:90px;">Ngày sinh</th>
+                            <th style="width:90px;">Ngay sinh</th>
                             <th style="width:100px;">Khoa</th>
-                            <th style="width:100px;">Lớp</th>
-                            <th style="width:120px;">Cơ sở</th>
-                            <th style="width:80px;">Trạng thái</th>
+                            <th style="width:100px;">Lop</th>
+                            <th style="width:120px;">Co so</th>
+                            <th style="width:80px;">Trang thai</th>
                             <th>Email</th>
                         </tr>
                     </thead>
@@ -145,7 +252,7 @@ try {
             $stt = 1;
             foreach ($rs['sinhviens'] as $sv) {
                 $svTrangthai = isset($sv['trangthai']) ? $sv['trangthai'] : '';
-                $statusClass = ($svTrangthai === 'Khóa') ? 'locked' : 'active';
+                $statusClass = ($svTrangthai === 'Khoa') ? 'locked' : 'active';
                 $extraTables .= '<tr>
                     <td style="text-align:center; color:#94A3B8; font-size:11px;">' . $stt++ . '</td>
                     <td class="sv-name">' . htmlspecialchars(isset($sv['tensinhvien']) ? $sv['tensinhvien'] : '') . '</td>
@@ -166,16 +273,46 @@ try {
         echo json_encode(array('response' => $finalResponse));
         exit;
     }
-    
+
     // =====================
     // NON-ADMIN FLOW (hocsinh, giangvien)
     // =====================
-    
-    // Bước 1: Gọi /chat để lấy vector
+
+    // Khoi tao Model ChatAI
+    $chatAI = new mChatAI();
+
+    // Luu tin nhan cua user vao database
+    if ($user_id && $prompt) {
+        $context_sv = $chatAI->LayContextSV($user_id);
+        $chatAI->LuuTinNhan($user_id, 'user', $prompt, $context_sv);
+    }
+
+    // Lay lich su chat gan day de dua vao prompt
+    $chat_history = "";
+    if ($user_id) {
+        $lich_su = $chatAI->LayLichSuChat($user_id, 10);
+        $messages = array();
+        while ($row = mysql_fetch_assoc($lich_su)) {
+            $messages[] = $row;
+        }
+        // Dao nguoc de lay dung thu tu (cu nhat truoc)
+        $messages = array_reverse($messages);
+
+        if (count($messages) > 0) {
+            $chat_history = "Lich su tro chuyen gan day:\n";
+            foreach ($messages as $msg) {
+                $role = ($msg['sender_type'] == 'user') ? 'Sinh vien' : 'Tro ly AI';
+                $chat_history .= $role . ": " . $msg['message_content'] . "\n";
+            }
+            $chat_history .= "\n---\n";
+        }
+    }
+
+    // Buoc 1: Goi /chat de lay vector
     $payload = json_encode(array(
         "text" => $prompt
     ));
-    
+
     $ch1 = curl_init();
     curl_setopt($ch1, CURLOPT_URL, "http://127.0.0.1:8000/chat");
     curl_setopt($ch1, CURLOPT_POST, true);
@@ -184,93 +321,89 @@ try {
     curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch1, CURLOPT_TIMEOUT, 120);
     curl_setopt($ch1, CURLOPT_CONNECTTIMEOUT, 30);
-    
+
     $response1 = curl_exec($ch1);
     $httpCode1 = curl_getinfo($ch1, CURLINFO_HTTP_CODE);
     $error1 = curl_error($ch1);
-    
+
     curl_close($ch1);
-    
+
     if ($error1) {
-        echo json_encode(array('response' => "Lỗi kết nối: " . $error1));
+        echo json_encode(array('response' => "Loi ket noi: " . $error1));
         exit;
     }
-    
-
 
     $rs = json_decode($response1, true);
     $vector_data = $rs['vector'];
-    
-//     var_dump($vector_data);
-// exit;
 
-    // Bước 2: Search trong Qdrant
-
+    // Buoc 2: Search trong Qdrant
     $urlQdrant = "http://localhost:6333/collections/iuh_subjects/points/search";
 
-    
     $dataQdrant = array(
         "vector" => $vector_data,
         "limit" => 5,
         "with_payload" => true
     );
-    
+
     $ch2 = curl_init($urlQdrant);
     curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch2, CURLOPT_POST, true);
     curl_setopt($ch2, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
     curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($dataQdrant));
-    
+
     $response2 = curl_exec($ch2);
     curl_close($ch2);
-    
+
     $result2 = json_decode($response2, true);
-    
-    // Ghép thành context
+
+    // Ghep thanh context
     $context = "";
-    
+
     if (isset($result2['result'])) {
         foreach ($result2['result'] as $i => $item) {
             $pItem = $item['payload'];
-            $context .= "Môn " . ($i + 1) . ":\n";
-            $context .= "- Tên: " . $pItem['tenhocphan'] . "\n";
-            $context .= "- Ngành: " . $pItem['tenchuyennganh'] . "\n";
-            $context .= "- Nhóm: " . $pItem['nhom_mon'] . "\n";
-            $context .= "- Mô tả: " . $pItem['text_content'] . "\n\n";
+            $context .= "Mon " . ($i + 1) . ":\n";
+            $context .= "- Ten: " . $pItem['tenhocphan'] . "\n";
+            $context .= "- Nganh: " . $pItem['tenchuyennganh'] . "\n";
+            $context .= "- Nhom: " . $pItem['nhom_mon'] . "\n";
+            $context .= "- Mo ta: " . $pItem['text_content'] . "\n\n";
         }
     }
-    
-    $message = "
-        Bạn là một trợ lý tư vấn môn học cho sinh viên.
 
-        Thông tin môn học:
+    $message = "
+        Ban la tro ly tu van mon hoc cho sinh vien.
+
+        Thong tin mon hoc:
         $context
 
-        Yêu cầu:
-        - Trả lời tự nhiên, thân thiện, dễ hiểu
-        - Trả lời trực tiếp vào câu hỏi
-        - Không dùng văn phong quá cứng nhắc hoặc học thuật
-        - Không nói kiểu AI như:
-        + 'dựa trên thông tin cung cấp'
-        + 'theo dữ liệu'
-        + 'theo ngữ cảnh'
-        - Không tự thêm môn học không có trong dữ liệu
-        - Nếu người dùng hỏi về một chuyên ngành cụ thể thì chỉ trả lời các môn thuộc chuyên ngành đó
-        - Không hỏi ngược lại người dùng
-        - Nếu câu hỏi không liên quan tới dữ liệu thì trả lời bình thường bằng hiểu biết chung
+        $chat_history
 
-        Câu hỏi của sinh viên:
+        Yeu cau:
+        - Tra loi tu nhien, than thien, de hieu
+        - Dua vao lich su tro chuyen de hieu ngu canh va tra loi lien quan
+        - Tra loi truc tiep vao cau hoi
+        - Khong dung van phong qua cung nac hoac hoc thuat
+        - Khong noi kieu AI nhu:
+        + 'dua tren thong tin cung cap'
+        + 'theo du lieu'
+        + 'theo ngu canh'
+        - Khong tu them mon hoc khong co trong du lieu
+        - Neu nguoi dung hoi ve mot chuyen nganh cu the thi chi tra loi cac mon thuoc chuyen nganh do
+        - Khong hoi nguoc lai nguoi dung
+        - Neu cau hoi khong lien quan toi du lieu thi tra loi binh thuong bang hieu biet chung
+
+        Cau hoi cua sinh vien:
         $prompt
-";
-    
-    // Bước 3: Gọi /chat-ai với context
+    ";
+
+    // Buoc 3: Goi /chat-ai voi context
     $ollamaUrl = CAL_LLM_CHAT;
-    
+
     $payloadFinal = json_encode(array(
         'message' => $message,
         'role' => $tmp
     ));
-    
+
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $ollamaUrl);
     curl_setopt($ch, CURLOPT_POST, true);
@@ -279,34 +412,41 @@ try {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 120);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-    
+
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
-    
+
     if ($error) {
-        echo json_encode(array('response' => "Lỗi kết nối đến AI: " . $error));
+        echo json_encode(array('response' => "Loi ket noi den AI: " . $error));
         exit;
     }
-    
+
     if ($httpCode !== 200) {
-        echo json_encode(array('response' => "API AI trả về mã lỗi: " . $httpCode));
+        echo json_encode(array('response' => "API AI tra ve ma loi: " . $httpCode));
         exit;
     }
-    
+
     $result = json_decode($response, true);
-    
+
     if (isset($result['message'])) {
         $responseText = is_array($result['message']) ? $result['message']['content'] : $result['message'];
-        echo json_encode(array('response' => $responseText));
     } elseif (isset($result['response'])) {
         $responseText = is_array($result['response']) ? $result['response']['content'] : $result['response'];
-        echo json_encode(array('response' => $responseText));
     } else {
-        echo json_encode(array('response' => is_string($result) ? $result : json_encode($result)));
+        $responseText = is_string($result) ? $result : json_encode($result);
     }
-    
+
+    // Luu phan hoi cua AI vao database
+    if ($user_id && $responseText) {
+        $context_sv = $chatAI->LayContextSV($user_id);
+        $chatAI->LuuTinNhan($user_id, 'ai', $responseText, $context_sv);
+    }
+
+    echo json_encode(array('response' => $responseText));
+
 } catch (Exception $e) {
-    echo json_encode(array('response' => "Lỗi: " . $e->getMessage()));
+    echo json_encode(array('response' => "Loi: " . $e->getMessage()));
 }
+?>

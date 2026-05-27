@@ -110,6 +110,18 @@ class cTKAD{
 		$sua1=$p->suattgv1();
 		return $sua1;
 	}
+	// Thêm sinh viên
+	function themSV(){
+		$p=new mTKAD();
+		$sua=$p->themSV();
+		return $sua;
+	}
+	// Thêm giảng viên
+	function themGV(){
+		$p=new mTKAD();
+		$sua=$p->themGV();
+		return $sua;
+	}
 	// Xóa giảng viên
 	function xoagv(){
 		$p=new mTKAD();

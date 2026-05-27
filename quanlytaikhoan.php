@@ -2092,6 +2092,22 @@ elseif(isset($_REQUEST['suatt'])){
 <?php
 }
 elseif(isset($_REQUEST['themgv'])){
+    // Xử lý thêm giảng viên bằng form
+    if(isset($_POST['them_giangvien'])){
+        include_once("Controller/cTKADHT.php");
+        $p = new cTKAD();
+        $result = $p->themGV();
+        if($result){
+            echo header("refresh:0,url='quanlytaikhoan.php?bm=".$_REQUEST['bm']."&&gv&&page=1'");
+        }
+    }
+    
+    // Lấy danh sách chuyên ngành cho dropdown
+    include_once("Model/mKetNoiADHT.php");
+    $pkn = new ketnoiAD();
+    $pkn->ketnoi($ketnoi);
+    $sql_cn = "select * from chuyennganh";
+    $qr_cn = mysql_query($sql_cn);
 ?>
     <div class="content-card">
         <div class="card-header-custom">
@@ -2103,25 +2119,170 @@ elseif(isset($_REQUEST['themgv'])){
             </div>
         </div>
         <div class="card-body-custom">
-            <div class="file-upload-area">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Tải File Excel để cấp tài khoản giảng viên</p>
+            <!-- Toggle Buttons -->
+            <div class="form-radio-group" style="justify-content: center; margin-bottom: 24px;">
+                <label class="form-radio-item" style="padding: 12px 24px;">
+                    <input type="radio" name="form_type_gv" value="form" checked onclick="toggleFormGV('form')"/> 
+                    <i class="fas fa-edit"></i> Nhập Form
+                </label>
+                <label class="form-radio-item" style="padding: 12px 24px;">
+                    <input type="radio" name="form_type_gv" value="file" onclick="toggleFormGV('file')"/> 
+                    <i class="fas fa-file-excel"></i> Tải File Excel
+                </label>
+            </div>
+
+            <!-- Form Nhập Liệu Giảng Viên -->
+            <div id="form-input-gv" class="form-section">
+                <div class="info-box" style="margin-bottom: 24px;">
+                    <p><i class="fas fa-info-circle"></i> Nhập đầy đủ thông tin giảng viên vào form bên dưới để tạo tài khoản.</p>
+                </div>
                 <form action="#" method="POST" enctype="multipart/form-data">
-                    <input type="file" name="f" required class="form-control-modern" accept=".xlsx,.xls" style="max-width: 300px; margin: 0 auto;"/>
-                    <div class="form-actions-center">
-                        <button type="submit" name="submit" class="btn btn-primary">
-                            <i class="fas fa-upload"></i> Tải Lên
+                    <!-- Thông Tin Tài Khoản -->
+                    <div class="profile-section" style="margin-bottom: 24px;">
+                        <h4 class="profile-section-title"><i class="fas fa-user-circle"></i> Thông Tin Tài Khoản</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Tên Tài Khoản <span style="color: red;">*</span></label>
+                                <input type="text" name="tentk" required class="form-control-modern" placeholder="Tên đăng nhập"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Mật Khẩu <span style="color: red;">*</span></label>
+                                <input type="password" name="matkhau" required class="form-control-modern" placeholder="Mật khẩu đăng nhập"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email <span style="color: red;">*</span></label>
+                                <input type="email" name="email" required class="form-control-modern" placeholder="email@example.com"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Số CCCD <span style="color: red;">*</span></label>
+                                <input type="text" name="cccd" required class="form-control-modern" placeholder="Số căn cước công dân"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Link Ảnh</label>
+                                <input type="text" name="anh" class="form-control-modern" placeholder="URL ảnh đại diện"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thông Tin Giảng Viên -->
+                    <div class="profile-section" style="margin-bottom: 24px;">
+                        <h4 class="profile-section-title"><i class="fas fa-chalkboard-teacher"></i> Thông Tin Giảng Viên</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Họ Tên Giảng Viên <span style="color: red;">*</span></label>
+                                <input type="text" name="tengv" required class="form-control-modern" placeholder="Nguyễn Văn A"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Mã Giảng Viên <span style="color: red;">*</span></label>
+                                <input type="text" name="mgv" required class="form-control-modern" placeholder="GV001"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Giới Tính <span style="color: red;">*</span></label>
+                                <div class="form-radio-group">
+                                    <label class="form-radio-item">
+                                        <input type="radio" name="gioitinh" value="Nam" checked/> Nam
+                                    </label>
+                                    <label class="form-radio-item">
+                                        <input type="radio" name="gioitinh" value="Nữ"/> Nữ
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Số Điện Thoại <span style="color: red;">*</span></label>
+                                <input type="text" name="sdt" required class="form-control-modern" placeholder="0xxx.xxx.xxx"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Địa Chỉ <span style="color: red;">*</span></label>
+                                <input type="text" name="diachi" required class="form-control-modern" placeholder="123 Đường ABC, Phường X, Quận Y, TP"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Học Vị <span style="color: red;">*</span></label>
+                                <select name="hocvi" required class="form-control-modern">
+                                    <option value="">-- Chọn Học Vị --</option>
+                                    <option value="Cử Nhân">Cử Nhân</option>
+                                    <option value="Thạc Sĩ">Thạc Sĩ</option>
+                                    <option value="Tiến Sĩ">Tiến Sĩ</option>
+                                    <option value="Phó Giáo Sư">Phó Giáo Sư</option>
+                                    <option value="Giáo Sư">Giáo Sư</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cơ Sở Giảng Dạy <span style="color: red;">*</span></label>
+                                <input type="text" name="csgd" required class="form-control-modern" placeholder="Trường ĐH ..."/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Chuyên Ngành <span style="color: red;">*</span></label>
+                                <select name="id_chuyennganh" required class="form-control-modern">
+                                    <option value="">-- Chọn Chuyên Ngành --</option>
+                                    <?php while($cn = mysql_fetch_assoc($qr_cn)){ ?>
+                                    <option value="<?php echo $cn['id_chuyennganh']; ?>"><?php echo $cn['tenchuyennganh']; ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column: span 3;">
+                                <label class="form-label">Quá Trình Công Tác</label>
+                                <textarea name="qtct" class="form-control-modern" rows="3" placeholder="Mô tả quá trình công tác..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Chứng Chỉ</label>
+                                <input type="text" name="chungchi" class="form-control-modern" placeholder="Chứng chỉ đạt được"/>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label class="form-label">Chứng Chỉ Khác</label>
+                                <textarea name="chungchikhac" class="form-control-modern" rows="2" placeholder="Các chứng chỉ khác..."></textarea>
+                            </div>
+                            <div class="form-group" style="grid-column: span 3;">
+                                <label class="form-label">Công Trình Khoa Học Tiêu Biểu</label>
+                                <textarea name="congtrinh" class="form-control-modern" rows="3" placeholder="Liệt kê các công trình khoa học tiêu biểu..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" name="them_giangvien" class="btn btn-success">
+                            <i class="fas fa-user-plus"></i> Thêm Giảng Viên
                         </button>
+                        <a href="quanlytaikhoan.php?bm=<?php echo $_REQUEST['bm']; ?>&&gv&&page=1" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Hủy
+                        </a>
                     </div>
                 </form>
-                <p style="margin-top: 20px; color: var(--text-secondary);">Đây là mẫu dữ liệu file nhập để cấp tài khoản. Để lấy file mẫu vui lòng bấm tải xuống!</p>
-                <a href="taixuong.php?fu=File_Cap_Tai_Khoan.xlsx" class="download-template">
-                    <img src="https://tse1.mm.bing.net/th?id=OIP.AxDKEs7Zk8uNUi031XqRjwHaG4&pid=Api&rs=1&c=1&qlt=95&w=116&h=107" style="width: 24px; height: 24px;"/>
-                    <span>Tải Mẫu File Excel</span>
-                </a>
+            </div>
+
+            <!-- Form Upload File Excel Giảng Viên -->
+            <div id="file-upload-gv" class="form-section" style="display: none;">
+                <div class="file-upload-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Tải File Excel để cấp tài khoản giảng viên</p>
+                    <form action="#" method="POST" enctype="multipart/form-data">
+                        <input type="file" name="f" required class="form-control-modern" accept=".xlsx,.xls" style="max-width: 300px; margin: 0 auto;"/>
+                        <div class="form-actions-center">
+                            <button type="submit" name="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Tải Lên
+                            </button>
+                        </div>
+                    </form>
+                    <p style="margin-top: 20px; color: var(--text-secondary);">Đây là mẫu dữ liệu file nhập để cấp tài khoản. Để lấy file mẫu vui lòng bấm tải xuống!</p>
+                    <a href="taixuong.php?fu=File_Cap_Tai_Khoan.xlsx" class="download-template">
+                        <img src="https://tse1.mm.bing.net/th?id=OIP.AxDKEs7Zk8uNUi031XqRjwHaG4&pid=Api&rs=1&c=1&qlt=95&w=116&h=107" style="width: 24px; height: 24px;"/>
+                        <span>Tải Mẫu File Excel</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+
+<script>
+function toggleFormGV(type) {
+    if(type == 'form') {
+        document.getElementById('form-input-gv').style.display = 'block';
+        document.getElementById('file-upload-gv').style.display = 'none';
+    } else {
+        document.getElementById('form-input-gv').style.display = 'none';
+        document.getElementById('file-upload-gv').style.display = 'block';
+    }
+}
+</script>
 <?php
 if(isset($_REQUEST['themgv'])){
 if(isset($_FILES['f'])) {
@@ -2235,6 +2396,24 @@ for ($row = 2; $row <= $highestRow; $row++){
 }
 }
 elseif(isset($_REQUEST['them'])){
+    // Xử lý thêm sinh viên bằng form
+    if(isset($_POST['them_sinhvien'])){
+        include_once("Controller/cTKADHT.php");
+        $p = new cTKAD();
+        $result = $p->themSV();
+        if($result){
+            echo header("refresh:0,url='quanlytaikhoan.php?bm=".$_REQUEST['bm']."&&sv&&page=1'");
+        }
+    }
+    
+    // Lấy danh sách khoa và chuyên ngành cho dropdown
+    include_once("Model/mKetNoiADHT.php");
+    $pkn = new ketnoiAD();
+    $pkn->ketnoi($ketnoi);
+    $sql_khoa = "select * from khoavien";
+    $qr_khoa = mysql_query($sql_khoa);
+    $sql_cn = "select * from chuyennganh";
+    $qr_cn = mysql_query($sql_cn);
 ?>
     <div class="content-card">
         <div class="card-header-custom">
@@ -2246,25 +2425,231 @@ elseif(isset($_REQUEST['them'])){
             </div>
         </div>
         <div class="card-body-custom">
-            <div class="file-upload-area">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Tải File Excel để cấp tài khoản sinh viên</p>
+            <!-- Toggle Buttons -->
+            <div class="form-radio-group" style="justify-content: center; margin-bottom: 24px;">
+                <label class="form-radio-item" style="padding: 12px 24px;">
+                    <input type="radio" name="form_type" value="form" checked onclick="toggleForm('form')"/> 
+                    <i class="fas fa-edit"></i> Nhập Form
+                </label>
+                <label class="form-radio-item" style="padding: 12px 24px;">
+                    <input type="radio" name="form_type" value="file" onclick="toggleForm('file')"/> 
+                    <i class="fas fa-file-excel"></i> Tải File Excel
+                </label>
+            </div>
+
+            <!-- Form Nhập Liệu -->
+            <div id="form-input" class="form-section">
+                <div class="info-box" style="margin-bottom: 24px;">
+                    <p><i class="fas fa-info-circle"></i> Nhập đầy đủ thông tin sinh viên vào form bên dưới để tạo tài khoản.</p>
+                </div>
                 <form action="#" method="POST" enctype="multipart/form-data">
-                    <input type="file" name="f" required class="form-control-modern" accept=".xlsx,.xls" style="max-width: 300px; margin: 0 auto;"/>
-                    <div class="form-actions-center">
-                        <button type="submit" name="submit" class="btn btn-primary">
-                            <i class="fas fa-upload"></i> Tải Lên
+                    <!-- Thông Tin Tài Khoản -->
+                    <div class="profile-section" style="margin-bottom: 24px;">
+                        <h4 class="profile-section-title"><i class="fas fa-user-circle"></i> Thông Tin Tài Khoản</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Tên Tài Khoản <span style="color: red;">*</span></label>
+                                <input type="text" name="tentk" required class="form-control-modern" placeholder="Tên đăng nhập"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Mật Khẩu <span style="color: red;">*</span></label>
+                                <input type="password" name="matkhau" required class="form-control-modern" placeholder="Mật khẩu đăng nhập"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email <span style="color: red;">*</span></label>
+                                <input type="email" name="email" required class="form-control-modern" placeholder="email@example.com"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Số CCCD <span style="color: red;">*</span></label>
+                                <input type="text" name="cccd" required class="form-control-modern" placeholder="Số căn cước công dân"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Link Ảnh</label>
+                                <input type="text" name="anh" class="form-control-modern" placeholder="URL ảnh đại diện"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thông Tin Sinh Viên -->
+                    <div class="profile-section" style="margin-bottom: 24px;">
+                        <h4 class="profile-section-title"><i class="fas fa-user-graduate"></i> Thông Tin Sinh Viên</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Họ Tên Sinh Viên <span style="color: red;">*</span></label>
+                                <input type="text" name="tensv" required class="form-control-modern" placeholder="Nguyễn Văn A"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Mã Số Sinh Viên <span style="color: red;">*</span></label>
+                                <input type="text" name="mssv" required class="form-control-modern" placeholder="SV001"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Giới Tính <span style="color: red;">*</span></label>
+                                <div class="form-radio-group">
+                                    <label class="form-radio-item">
+                                        <input type="radio" name="gioitinh" value="Nam" checked/> Nam
+                                    </label>
+                                    <label class="form-radio-item">
+                                        <input type="radio" name="gioitinh" value="Nữ"/> Nữ
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Ngày Sinh <span style="color: red;">*</span></label>
+                                <input type="date" name="ngaysinh" required class="form-control-modern"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Số Điện Thoại <span style="color: red;">*</span></label>
+                                <input type="text" name="sdt" required class="form-control-modern" placeholder="0xxx.xxx.xxx"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Ngày Cấp CCCD <span style="color: red;">*</span></label>
+                                <input type="date" name="ngaycap" required class="form-control-modern"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nơi Cấp CCCD <span style="color: red;">*</span></label>
+                                <input type="text" name="noicap" required class="form-control-modern" placeholder="TP. Hồ Chí Minh"/>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label class="form-label">Địa Chỉ Liên Hệ <span style="color: red;">*</span></label>
+                                <input type="text" name="diachi" required class="form-control-modern" placeholder="123 Đường ABC, Phường X, Quận Y, TP"/>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label class="form-label">Hộ Khẩu Thường Trú <span style="color: red;">*</span></label>
+                                <input type="text" name="hokhau" required class="form-control-modern" placeholder="123 Đường ABC, Phường X, Quận Y, Tỉnh Z"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thông Tin Học Tập -->
+                    <div class="profile-section" style="margin-bottom: 24px;">
+                        <h4 class="profile-section-title"><i class="fas fa-graduation-cap"></i> Thông Tin Học Tập</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Ngày Vào Trường <span style="color: red;">*</span></label>
+                                <input type="date" name="ngayvt" required class="form-control-modern"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Khóa Học <span style="color: red;">*</span></label>
+                                <input type="text" name="khoa" required class="form-control-modern" placeholder="K2023"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Lớp <span style="color: red;">*</span></label>
+                                <input type="text" name="lop" required class="form-control-modern" placeholder="CNTT23A"/>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cơ Sở Đào Tạo <span style="color: red;">*</span></label>
+                                <select name="csdt" required class="form-control-modern">
+                                    <option value="">-- Chọn Cơ Sở --</option>
+                                    <option value="Cơ Sở 1">Cơ Sở 1</option>
+                                    <option value="Cơ Sở 2">Cơ Sở 2</option>
+                                    <option value="Cơ Sở 3">Cơ Sở 3</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Khoa <span style="color: red;">*</span></label>
+                                <select name="khoa_id" id="khoa_select" required class="form-control-modern" onchange="loadChuyenNganh()">
+                                    <option value="">-- Chọn Khoa --</option>
+                                    <?php while($k = mysql_fetch_assoc($qr_khoa)){ ?>
+                                    <option value="<?php echo $k['id_khoa']; ?>"><?php echo $k['tenkhoa']; ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Chuyên Ngành <span style="color: red;">*</span></label>
+                                <select name="id_chuyennganh" id="chuyennganh_select" required class="form-control-modern">
+                                    <option value="">-- Chọn Chuyên Ngành --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Trạng Thái <span style="color: red;">*</span></label>
+                                <select name="trangthai" required class="form-control-modern">
+                                    <option value="1">Đang Học</option>
+                                    <option value="0">Ngưng Học</option>
+                                    <option value="2">Đã Tốt Nghiệp</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" name="them_sinhvien" class="btn btn-success">
+                            <i class="fas fa-user-plus"></i> Thêm Sinh Viên
                         </button>
+                        <a href="quanlytaikhoan.php?bm=<?php echo $_REQUEST['bm']; ?>&&sv&&page=1" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Hủy
+                        </a>
                     </div>
                 </form>
-                <p style="margin-top: 20px; color: var(--text-secondary);">Đây là mẫu dữ liệu file nhập để cấp tài khoản. Để lấy file mẫu vui lòng bấm tải xuống!</p>
-                <a href="taixuong.php?fu=File_Cap_Tai_Khoan.xlsx" class="download-template">
-                    <img src="https://tse1.mm.bing.net/th?id=OIP.AxDKEs7Zk8uNUi031XqRjwHaG4&pid=Api&rs=1&c=1&qlt=95&w=116&h=107" style="width: 24px; height: 24px;"/>
-                    <span>Tải Mẫu File Excel</span>
-                </a>
+            </div>
+
+            <!-- Form Upload File Excel -->
+            <div id="file-upload" class="form-section" style="display: none;">
+                <div class="file-upload-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Tải File Excel để cấp tài khoản sinh viên</p>
+                    <form action="#" method="POST" enctype="multipart/form-data">
+                        <input type="file" name="f" required class="form-control-modern" accept=".xlsx,.xls" style="max-width: 300px; margin: 0 auto;"/>
+                        <div class="form-actions-center">
+                            <button type="submit" name="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Tải Lên
+                            </button>
+                        </div>
+                    </form>
+                    <p style="margin-top: 20px; color: var(--text-secondary);">Đây là mẫu dữ liệu file nhập để cấp tài khoản. Để lấy file mẫu vui lòng bấm tải xuống!</p>
+                    <a href="taixuong.php?fu=File_Cap_Tai_Khoan.xlsx" class="download-template">
+                        <img src="https://tse1.mm.bing.net/th?id=OIP.AxDKEs7Zk8uNUi031XqRjwHaG4&pid=Api&rs=1&c=1&qlt=95&w=116&h=107" style="width: 24px; height: 24px;"/>
+                        <span>Tải Mẫu File Excel</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+
+<script>
+function toggleForm(type) {
+    if(type == 'form') {
+        document.getElementById('form-input').style.display = 'block';
+        document.getElementById('file-upload').style.display = 'none';
+    } else {
+        document.getElementById('form-input').style.display = 'none';
+        document.getElementById('file-upload').style.display = 'block';
+    }
+}
+
+function loadChuyenNganh() {
+    var khoaId = document.getElementById('khoa_select').value;
+    var cnSelect = document.getElementById('chuyennganh_select');
+    cnSelect.innerHTML = '<option value="">-- Đang tải --</option>';
+    
+    if(khoaId) {
+        <?php
+        // Tạo mảng chuyên ngành theo khoa cho JavaScript
+        $chuyennganh_by_khoa = array();
+        mysql_data_seek($qr_khoa, 0);
+        while($khoa = mysql_fetch_assoc($qr_khoa)){
+            $sql_cn_khoa = "select * from chuyennganh where id_khoa='".$khoa['id_khoa']."'";
+            $qr_cn_khoa = mysql_query($sql_cn_khoa);
+            $chuyennganh_by_khoa[$khoa['id_khoa']] = array();
+            while($cn = mysql_fetch_assoc($qr_cn_khoa)){
+                $chuyennganh_by_khoa[$khoa['id_khoa']][] = $cn;
+            }
+        }
+        ?>
+        var chuyenNganhData = <?php echo json_encode($chuyennganh_by_khoa); ?>;
+        cnSelect.innerHTML = '<option value="">-- Chọn Chuyên Ngành --</option>';
+        if(chuyenNganhData[khoaId]) {
+            chuyenNganhData[khoaId].forEach(function(cn) {
+                var option = document.createElement('option');
+                option.value = cn.id_chuyennganh;
+                option.textContent = cn.tenchuyennganh;
+                cnSelect.appendChild(option);
+            });
+        }
+    } else {
+        cnSelect.innerHTML = '<option value="">-- Chọn Chuyên Ngành --</option>';
+    }
+}
+</script>
 <?php
 if(isset($_REQUEST['them'])){
 if(isset($_FILES['f'])) {
