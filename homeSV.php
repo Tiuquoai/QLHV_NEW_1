@@ -576,7 +576,7 @@ if($k != $mk || $m != $ma){
             <ul class="sidebar-menu">
                 <li><a href="#courses" class="active">📚 Các Khóa Học</a></li>
                 <li><a href="info.php?bm=<?php echo $_REQUEST['bm'] ?>">👤 Thông Tin</a></li>
-                <li><a href="chat-sv.php?bm=<?php echo $_REQUEST['bm'] ?>">🤖 Chat AI</a></li>
+                
                 <li><a href="dxuat.php?xuat=ahihi">🚪 Đăng Xuất</a></li>
             </ul>
         </div>

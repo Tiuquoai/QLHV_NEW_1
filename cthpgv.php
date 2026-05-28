@@ -2878,10 +2878,10 @@ a:hover {
         <div class="header-content">
             <!-- Brand -->
             <div class="header-brand">
-                <img src="https://tse3.mm.bing.net/th?id=OIP.Mzt3QQhdBuSmGLUb3mxAgAHaDU&pid=Api&P=0&h=180" alt="Logo" class="brand-logo" />
+                <img src="./img/jahja.jpg" alt="Logo" class="brand-logo" />
                 <div class="brand-text">
                     <h1>Hệ Thống Quản Lý</h1>
-                    <p>Trường Cao Đẳng Sư Phạm</p>
+                    <p>Trường Đại học Công nghiệp TPHCM</p>
                 </div>
             </div>
 
@@ -5982,7 +5982,7 @@ elseif($n==$ig||$m==$ig){
                     <img src="./img/jahja.jpg" alt="Logo" />
                     <h3>QLHV System</h3>
                 </div>
-                <p>Hệ thống Quản lý Học vụ - Trường Cao Đẳng Sư Phạm. Quản lý hiệu quả, minh bạch và chuyên nghiệp.</p>
+                <p>Hệ thống Quản lý Học vụ - Trường Đại học Công nghiệp TPHCM. Quản lý hiệu quả, minh bạch và chuyên nghiệp.</p>
                 <div class="footer-social">
                     <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
                     <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
@@ -6038,7 +6038,7 @@ elseif($n==$ig||$m==$ig){
 
     <!-- Footer Bottom -->
     <div class="footer-bottom">
-        <p>&copy; 2026 QLHV System - Trường Cao Đẳng Sư Phạm. All rights reserved.</p>
+        <p>&copy; 2026 QLHV System - Trường Đại học Công nghiệp TPHCM. All rights reserved.</p>
         <div class="footer-bottom-links">
             <a href="#">Điều Khoản</a>
             <a href="#">Bảo Mật</a>

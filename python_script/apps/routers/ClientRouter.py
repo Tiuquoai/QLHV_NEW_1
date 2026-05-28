@@ -11,7 +11,7 @@ agenticController = AgenticController()
 
 @router.post("")
 async def get_users(payload : MessagePayload):
-    print(payload)
+    # print(payload)
     return await agenticController.pickToolsFunc(payload.message, payload.role )
     # return {
     #     "message" : "kakakakaka"
