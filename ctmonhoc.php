@@ -2353,11 +2353,12 @@ elseif(isset($_REQUEST['nopbaiktth'])){
         <h4>📝 Nop Kiem Tra Thuc Hanh</h4>
         <?php
         $sql="select * from filenopktth where id_sinhvien='$is' and id_btth='$id'";
-        $qr=mysql_query($sql);
-        $hasSubmission = mysql_num_rows($qr) > 0;
-        if($hasSubmission){
-            $s=mysql_fetch_assoc($qr);
-        }
+        // $qr=mysql_query($sql);
+        // var_dump($qr);
+        // $hasSubmission = mysql_num_rows($qr) > 0;
+        // if($hasSubmission){
+        //     $s=mysql_fetch_assoc($qr);
+        // }
         if($hasSubmission){
             ?>
             <div class="upload-form">

@@ -32,6 +32,7 @@ client = QdrantClient(
     url="http://localhost:6333"
 )
 
+## dùng model BAAI để chuyển hóa thành vector
 model = SentenceTransformer('BAAI/bge-m3')
 
 env_path = (
@@ -56,7 +57,7 @@ def home ():
     return {
         "message" : "Hello chào bạn đã đến đây hehehehehehehehehe"
     }
-    
+## chuyển hóa sang vector  
 @app.post('/chat')
 def embed(data: RequestData):
     

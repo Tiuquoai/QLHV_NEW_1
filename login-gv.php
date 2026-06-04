@@ -71,6 +71,7 @@
                 </div>
 
                 <input type="hidden" name="cd" value="<?php echo $_SESSION['captcha'];?>" />
+                
                 <input type="hidden" name="dngv" value="hoài hehe" />
 
                 <div style="display:flex; gap:16px; margin-top:20px;">

@@ -18,10 +18,16 @@ async def _to_list(cursor):
 
 class tools_func:
 
+    # annotation 
     @tool
     async def sending_email(email1: str, content: str) -> dict:
         """
-        Gửi email đến một người nào đó khi user yêu cầu.
+        Chỉ gọi công cụ này khi người dùng yêu cầu rõ ràng muốn gửi 1 email cho 1 người.
+
+        Không gọi công cụ này khi người dùng chỉ chào hỏi như: ê, ủa, alo, hello, hi, chào bạn.
+        Không gọi công cụ này khi người dùng nói chung chung như: tôi cần giúp, hỗ trợ tôi.
+        Không gọi công cụ này nếu thiếu email người nhận hoặc thiếu nội dung email.
+        Không gọi công cụ này để gửi hàng loạt, spam email, gửi nhiều email, gửi 1000 email, bomb mail hoặc mass email.
         """
         try:
             message = EmailMessage()

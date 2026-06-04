@@ -142,7 +142,7 @@ try {
     // Get user info from session
     $user_id = null;
     $tmp = "hocsinh";
-
+    // lay vai tro
     if (isset($_SESSION['ma']) && isset($_SESSION['mk'])) {
         $mauser = $_SESSION['ma'];
         $sql = "SELECT * FROM user WHERE user_code = '$mauser'";
@@ -312,7 +312,7 @@ try {
     $payload = json_encode(array(
         "text" => $prompt
     ));
-
+    ## goi chuyen hoa vector 
     $ch1 = curl_init();
     curl_setopt($ch1, CURLOPT_URL, "http://127.0.0.1:8000/chat");
     curl_setopt($ch1, CURLOPT_POST, true);
@@ -336,7 +336,7 @@ try {
     $rs = json_decode($response1, true);
     $vector_data = $rs['vector'];
 
-    // Buoc 2: Search trong Qdrant
+    // Buoc 2: Search trong Qdrant so sanh vector
     $urlQdrant = "http://localhost:6333/collections/iuh_subjects/points/search";
 
     $dataQdrant = array(
@@ -371,29 +371,27 @@ try {
     }
 
     $message = "
-        Ban la tro ly tu van mon hoc cho sinh vien.
+Bạn là trợ lý tư vấn môn học và chuyên ngành cho sinh viên.
 
-        Thong tin mon hoc:
-        $context
+DỮ LIỆU MÔN HỌC:
+$context
 
-        $chat_history
+LỊCH SỬ TRÒ CHUYỆN:
+$chat_history
 
-        Yeu cau:
-        - Tra loi tu nhien, than thien, de hieu
-        - Dua vao lich su tro chuyen de hieu ngu canh va tra loi lien quan
-        - Tra loi truc tiep vao cau hoi
-        - Khong dung van phong qua cung nac hoac hoc thuat
-        - Khong noi kieu AI nhu:
-        + 'dua tren thong tin cung cap'
-        + 'theo du lieu'
-        + 'theo ngu canh'
-        - Khong tu them mon hoc khong co trong du lieu
-        - Neu nguoi dung hoi ve mot chuyen nganh cu the thi chi tra loi cac mon thuoc chuyen nganh do
-        - Khong hoi nguoc lai nguoi dung
-        - Neu cau hoi khong lien quan toi du lieu thi tra loi binh thuong bang hieu biet chung
+YÊU CẦU:
+- Chỉ trả lời các nội dung liên quan đến môn học, học phần, chuyên ngành, giảng viên, lịch học hoặc gợi ý học tập.
+- Nếu người dùng chỉ chào hỏi, gọi bot hoặc nói cần giúp đỡ thì trả lời thân thiện và hướng người dùng hỏi về môn học hoặc chuyên ngành.
+- Nếu câu hỏi không liên quan đến phạm vi trên thì trả lời:
+'Mình chỉ hỗ trợ các câu hỏi liên quan đến môn học, học phần, chuyên ngành, giảng viên, lịch học hoặc gợi ý học tập thôi nha.'
+- Chỉ dùng dữ liệu môn học được cung cấp để trả lời.
+- Không tự bịa thêm môn học, giảng viên, phòng học hoặc lịch học.
+- Không tự suy đoán người nổi tiếng, nhân vật, địa danh hoặc sự kiện là sinh viên.
+- Không nói kiểu AI như 'dựa trên dữ liệu', 'theo thông tin cung cấp', 'theo ngữ cảnh'.
+- Trả lời tự nhiên, thân thiện, ngắn gọn, dễ hiểu.
 
-        Cau hoi cua sinh vien:
-        $prompt
+CÂU HỎI CỦA SINH VIÊN:
+$prompt
     ";
 
     // Buoc 3: Goi /chat-ai voi context
@@ -427,7 +425,7 @@ try {
         echo json_encode(array('response' => "API AI tra ve ma loi: " . $httpCode));
         exit;
     }
-
+    // trả kết quả từ model AI gửi về 
     $result = json_decode($response, true);
 
     if (isset($result['message'])) {
@@ -443,7 +441,7 @@ try {
         $context_sv = $chatAI->LayContextSV($user_id);
         $chatAI->LuuTinNhan($user_id, 'ai', $responseText, $context_sv);
     }
-
+// trả về kết quả cho người dùng 
     echo json_encode(array('response' => $responseText));
 
 } catch (Exception $e) {

@@ -1043,6 +1043,7 @@ if($k != $mk || $m != $ma){
 }
 ?>
 <?php
+// check dang nhap
 if(!isset($_REQUEST['bm'])){
 	echo header("refresh:0,url='index.php'");
 }
